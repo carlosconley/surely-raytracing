@@ -80,7 +80,7 @@ pub fn render(cam: &Camera, world: &HittableList) {
 			let mut pixel_color = Vec3::new_zero();
 			for _sample in 0..cam.samples_per_pixel {
 				let r = get_ray(cam, i, j);
-				pixel_color = pixel_color + ray_color(&r,  cam.max_depth, world, None);
+				pixel_color = pixel_color + ray_color(&r,  cam.max_depth, world);
 			}
             write_color(&mut std::io::stdout(), &pixel_color, cam.samples_per_pixel as f64);
         }
@@ -109,7 +109,55 @@ fn pixel_sample_square(cam: &Camera) -> Vec3 {
 	px * cam.pixel_delta_u + py * cam.pixel_delta_v
 }
 
-fn ray_color(r: &Ray, depth: i32, world: &dyn Hittable, normal: Option<&Vec3>) -> Color {
+fn ray_color(r: &Ray, depth: i32, world: &dyn Hittable) -> Color {
+	// check if we hit bounce limit
+	if depth <= 0 { return Vec3::new_zero() }
+
+	match world.hit(r, &Interval {min: 0.0001, max:  INF }) {
+		Some(rec) => {
+			match rec.mat.scatter(r, &rec) {
+				Some((attenuation, scattered)) => attenuation * ray_color(&scattered, depth - 1, world),
+				None => Color::new_zero()
+			}
+		}
+		None => {
+			// This sets the skybox + ambient light
+			let unit_direction = unit_vector(&r.direction());
+			let a = 0.5 * (unit_direction.y() + 1.0);
+
+			(1.0 - a) * Color::new(1.0, 1.0, 1.) + a * Color::new(0.5, 0.7, 1.0)
+		}
+	}
+
+}
+
+fn do_sun(r: &Ray, world: &dyn Hittable) -> Color {
+	let sun = unit_vector(&Vec3::new(1., 1., 1.));
+	let sun_color = Color::new(1., 1., 1.);
+
+	compute_sun(&sun, &sun_color, r, world)
+}
+
+fn compute_sun(sun: &Vec3, sun_color: &Color, r: &Ray, world: &dyn Hittable) -> Color {
+	match world.hit(&Ray::new(&r.origin(), &sun), &Interval {min: 0.001, max: f64::INFINITY}) {
+		None => {
+			let unit_direction = unit_vector(&r.direction());
+
+			let sun_intensity = dot(&unit_direction, &sun);
+
+			if sun_intensity > 0. {
+				sun_intensity * sun_color.clone()
+			} else {
+				Color::new_zero()
+			}
+		}
+		_ => {
+			//eprintln!("woah this shouldn't happen");
+			Color::new_zero()
+		}
+	}
+}
+/* fn ray_color_sun(r: &Ray, depth: i32, world: &dyn Hittable, normal: Option<&Vec3>) -> Color {
 	// check if we hit bounce limit
 	if depth <= 0 { return Vec3::new_zero() }
 
@@ -143,60 +191,4 @@ fn ray_color(r: &Ray, depth: i32, world: &dyn Hittable, normal: Option<&Vec3>) -
 	// This sets the skybox + ambient light
 
 }
-
-fn do_sun(r: &Ray, world: &dyn Hittable) -> Color {
-	let sun = unit_vector(&Vec3::new(1., 1., 1.));
-	let sun_color = Color::new(1., 1., 1.);
-
-	compute_sun(&sun, &sun_color, r, world)
-}
-
-fn compute_sun(sun: &Vec3, sun_color: &Color, r: &Ray, world: &dyn Hittable) -> Color {
-	match world.hit(&Ray::new(&r.origin(), &sun), &Interval {min: 0.001, max: f64::INFINITY}) {
-		None => {
-			let unit_direction = unit_vector(&r.direction());
-
-			let sun_intensity = dot(&unit_direction, &sun);
-
-			if sun_intensity > 0. {
-				sun_intensity * sun_color.clone()
-			} else {
-				Color::new_zero()
-			}
-		}
-		_ => {
-			//eprintln!("woah this shouldn't happen");
-			Color::new_zero()
-		}
-	}
-}
-/*
-
-fn ray_color_sun(r: &Ray, depth: i32, world: &dyn Hittable) -> Color {
-	let sun = unit_vector(&Vec3::new(1., 1., 1.));
-	let sun_color = Color::new(1., 1., 1.);
-
-	// check if we hit bounce limit
-	if depth <= 0 {
-		// This sets the skybox + ambient light
-		return Color::new_zero();
-		return compute_sun(&sun, &sun_color, r, world);
-	}
-
-	match world.hit(r, &Interval {min: 0.0001, max:  f64::INFINITY }) {
-		Some(rec) => {
-			match rec.mat.scatter(r, &rec) {
-				Some((attenuation, scattered)) => return attenuation * ray_color_sun(&scattered, depth - 1, world),
-				None => {
-					return Color::new_zero();
-					return compute_sun(&sun, &sun_color, r, world); }
-			}
-		}
-		None => ()
-	}
-
-	// This sets the skybox + ambient light
-	compute_sun(&sun, &sun_color, r, world)
-
-
-}*/
+*/

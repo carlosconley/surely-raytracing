@@ -179,6 +179,9 @@ pub fn random_on_hemisphere(normal: &Vec3) -> Vec3 {
 pub fn random_unit_vector() -> Vec3 {
 	unit_vector(&random_in_unit_sphere())
 }
+ pub fn reflect(v: &Vec3, n: &Vec3) -> Vec3 {
+	*v - 2. * dot(v, n) * *n
+ }
 
 fn random_in_unit_sphere() -> Vec3 {
 	loop {

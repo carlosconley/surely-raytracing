@@ -2,7 +2,7 @@
 use crate::{color::Color,
 	hittable::HitRecord,
 	ray::Ray,
-	vec3::random_unit_vector
+	vec3::{random_unit_vector, reflect, unit_vector}
 };
 
 pub trait Material {
@@ -60,3 +60,19 @@ impl Material for PerfectLambertian {
 	}
 }
 
+pub struct Metal {
+	albedo: Color
+}
+
+impl Metal {
+	pub fn new(albedo: Color) -> Self {
+		Metal { albedo }
+	}
+}
+
+impl Material for Metal {
+	fn scatter(&self, r_in: &Ray, rec: &HitRecord) -> Option<(Color, Ray)> {
+		let reflected = reflect(&unit_vector(&r_in.direction()),&rec.normal);
+		Some((self.albedo, Ray::new(&rec.p, &reflected)))
+	}
+}
