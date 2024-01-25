@@ -28,10 +28,19 @@ impl HitRecord {
 
 pub trait Hittable {
 	fn hit(&self, r: &Ray, ray_t: &Interval) -> Option<HitRecord>;
+
+	fn shadow_hit(&self, r: &Ray, ray_t: &Interval) -> Option<HitRecord> {
+		None
+	}
 }
 
 pub struct HittableList {
 	pub objects: Vec<Rc<dyn Hittable>>
+
+}
+
+impl HittableList {
+
 }
 
 impl Hittable for HittableList {
@@ -49,7 +58,21 @@ impl Hittable for HittableList {
 			}
 		}
 
-		return rec;
+		rec
 
+	}
+	fn shadow_hit(&self, r: &Ray, ray_t: &Interval) -> Option<HitRecord> {
+		let mut rec = None;
+
+		for object in self.objects.iter() {
+			match object.hit(r, ray_t) {
+				Some(temp_rec) => {
+					return Some(temp_rec);	
+				}
+				_ => ()
+			}
+		}	
+
+		rec
 	}
 }

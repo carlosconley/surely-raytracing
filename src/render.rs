@@ -1,9 +1,10 @@
+
 use crate::interval::Interval;
 use crate::color::{Color, write_color};
 use crate::ray::Ray;
 use crate::vec3::{unit_vector, Point3, Vec3, dot};
 use crate::hittable::{Hittable, HittableList};
-use crate::utils::random_double;
+use crate::utils::{random_double, INF};
 
 pub struct Camera {
 	pub aspect_ratio: f64,
@@ -79,7 +80,7 @@ pub fn render(cam: &Camera, world: &HittableList) {
 			let mut pixel_color = Vec3::new_zero();
 			for _sample in 0..cam.samples_per_pixel {
 				let r = get_ray(cam, i, j);
-				pixel_color = pixel_color + ray_color(&r,  cam.max_depth, world);
+				pixel_color = pixel_color + ray_color(&r,  cam.max_depth, world, None);
 			}
             write_color(&mut std::io::stdout(), &pixel_color, cam.samples_per_pixel as f64);
         }
@@ -108,25 +109,37 @@ fn pixel_sample_square(cam: &Camera) -> Vec3 {
 	px * cam.pixel_delta_u + py * cam.pixel_delta_v
 }
 
-fn ray_color(r: &Ray, depth: i32, world: &dyn Hittable) -> Color {
+fn ray_color(r: &Ray, depth: i32, world: &dyn Hittable, normal: Option<&Vec3>) -> Color {
 	// check if we hit bounce limit
 	if depth <= 0 { return Vec3::new_zero() }
 
-	match world.hit(r, &Interval {min: 0.0001, max:  f64::INFINITY }) {
+	match world.hit(r, &Interval {min: 0.0001, max:  INF }) {
 		Some(rec) => {
 			match rec.mat.scatter(r, &rec) {
-				Some((attenuation, scattered)) => attenuation * ray_color(&scattered, depth - 1, world),
+				Some((attenuation, scattered)) => attenuation * ray_color(&scattered, depth - 1, world, Some(&rec.normal)),
 				None => Color::new_zero()
 			}
 		}
 		None => {
 			let unit_direction = unit_vector(&r.direction());
-			let a = 0.5 * (unit_direction.y() + 1.0);
+			match normal {	
+				None => {
+					let a = 0.5 * (unit_direction.y() + 1.0);
 
-			(1.0 - a) * Color::new(1.0, 1.0, 1.) + a * Color::new(0.5, 0.7, 1.0)
+					Color::new_zero()
+				//(1.0 - a) * Color::new(1.0, 1.0, 1.) + a * Color::new(0.5, 0.7, 1.0)
+				}
+				Some (normal) => {
+					let sun = unit_vector(&Vec3::new(1.0, 1., 0.));
+					let sun_color = Color::new(1., 1., 1.);
+					match world.shadow_hit(&Ray::new(&r.origin(), &sun), &Interval {min: 0.0001, max:  INF}) {
+						None => dot(&sun, &normal).max(0.) * sun_color,
+						Some(_) => Color::new_zero()	
+					}
+				}
+			}
 		}
 	}
-
 	// This sets the skybox + ambient light
 
 }

@@ -39,10 +39,10 @@ impl Hittable for Sphere {
 			}
 		}
 		let p = r.at(root);
-		let outward_normal = (p - self.center) / self.radius;
+		let normal = (p - self.center) / self.radius;
 
 		Some (
-			HitRecord::new(p, root, r, &outward_normal, self.mat.clone())
+			HitRecord::new(p, root, r, &normal, self.mat.clone())
 		)
 	}
 }
