@@ -3,7 +3,7 @@ use crate::color::{Color, write_color};
 use crate::ray::Ray;
 use crate::vec3::{Point3, Vec3, unit_vector};
 use crate::hittable::{Hittable, HittableList};
-use crate::utils::{random};
+use crate::utils::random_double;
 
 pub struct Camera {
 	pub aspect_ratio: f64,
@@ -90,8 +90,8 @@ fn get_ray(cam: &Camera, i: i32, j: i32) -> Ray {
 
 fn pixel_sample_square(cam: &Camera) -> Vec3 {
 	// Returns a random point in the square surrounding a pixel at the origin
-	let px = random() - 0.5;
-	let py = random() - 0.5;
+	let px = random_double() - 0.5;
+	let py = random_double() - 0.5;
 	px * cam.pixel_delta_u + py * cam.pixel_delta_v
 }
 
