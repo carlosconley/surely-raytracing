@@ -1,3 +1,4 @@
+use crate::material::Material;
 use crate::ray::Ray;
 use crate::interval::Interval;
 use crate::vec3::{Point3, Vec3, dot};
@@ -7,20 +8,22 @@ use::std::rc::Rc;
 pub struct HitRecord {
 	pub p: Point3, // intersection point
 	pub normal: Vec3, // normal at hit
+	pub mat: Rc<dyn Material>,
 	pub t: f64, // ray length
 	pub front_face: bool,
 }
 
 impl HitRecord {
-	pub fn new(p: Point3, t:f64, r: &Ray, normal: &Vec3) -> Self {
+	pub fn new(p: Point3, t:f64, r: &Ray, normal: &Vec3, mat: Rc<dyn Material>) -> Self {
 		let front_face = dot(&r.direction(), normal) < 0.;
 		HitRecord {
 			p,
 			t,
+			mat,
 			front_face,
 			normal: if front_face { normal.clone() } else { -normal.clone() }
 		}
-	}	
+	}
 }
 
 pub trait Hittable {
