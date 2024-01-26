@@ -69,7 +69,7 @@ fn main() {
     )));
 
     // Camera
-    let cam = Camera::new(16. / 9., 800, 100, 50, 90.);
+    let cam = Camera::new(16. / 9., 1000, 400, 50, 90.);
 
     render(&cam, &world);
 
