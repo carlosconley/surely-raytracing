@@ -81,7 +81,7 @@ impl Camera {
 
 fn _render_thread(cam: Arc<Camera>, samples: i32, world: Arc<HittableList>) {
 	for j in 0..cam.image_height {
-        eprint!("\r Progress: {:.3}% ", j as f32 / (cam.image_height - 1) as f32 * 100.);
+        if j % (cam.image_height / 100) == 0 { eprint!("\r Progress: {}% ", j * 100 / cam.image_height); }
         for i in 0..cam.image_width {
 			let mut pixel_color = Vec3::new_zero();
 			for _sample in 0..samples {

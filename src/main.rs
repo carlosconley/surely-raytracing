@@ -80,7 +80,7 @@ fn main() {
 
     // Camera
     let world = Arc::new(world);
-    let cam = Arc::new(Camera::new(16. / 9., 800, 100, 50, 90.));
+    let cam = Arc::new(Camera::new(16. / 9., 1000, 400, 50, 90.));
 
     render(cam.clone(), world);
 
