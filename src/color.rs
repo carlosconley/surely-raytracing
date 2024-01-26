@@ -32,9 +32,9 @@ pub fn write_color<W: Write>(out: &mut W, pixel_color: &Color, samples_per_pixel
 
 }
 
-const GAMMA: f64 = 1. / 2.4;
+//const _GAMMA: f64 = 1. / 2.4;
 
-fn gamma_to_linear(gamma: f64) -> f64 {
+fn _gamma_to_linear(gamma: f64) -> f64 {
 	if gamma <= 0.04045 {
 		gamma / 12.92
 	} else {
@@ -46,11 +46,11 @@ fn linear_to_gamma_fast(linear: f64) -> f64 {
 	linear.sqrt()
 }
 
-fn linear_to_gamma(linear: f64) -> f64 {
+fn _linear_to_gamma(linear: f64) -> f64 {
 	if linear <= 0.0031308 {
 		12.92 * linear
 	} else {
-		1.055 * linear.powf(GAMMA) - 0.055
+		1.055 * linear.powf(1. / 2.4) - 0.055
 	}
 
 }

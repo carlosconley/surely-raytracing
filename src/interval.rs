@@ -1,11 +1,11 @@
 use crate::utils::INF;
 
-pub const EMPTY: Interval = Interval {
-	min: INF, 
+pub const _EMPTY: Interval = Interval {
+	min: INF,
 	max: -INF
 };
 
-pub const UNIVERSE: Interval = Interval {
+pub const _UNIVERSE: Interval = Interval {
 	min: -INF,
 	max: INF
 };
@@ -16,7 +16,7 @@ pub struct Interval {
 }
 
 impl Interval {
-	pub fn contains(&self, x: f64) -> bool {
+	pub fn _contains(&self, x: f64) -> bool {
 		self.min <= x && x <= self.max
 	}
 

@@ -44,7 +44,7 @@ pub struct PerfectLambertian {
 }
 
 impl PerfectLambertian {
-	pub fn new(albedo: Color) -> Self {
+	pub fn _new(albedo: Color) -> Self {
 		PerfectLambertian { albedo }
 	}
 }
@@ -73,7 +73,7 @@ impl Metal {
 impl Material for Metal {
 	fn scatter(&self, r_in: &Ray, rec: &HitRecord) -> Option<(Color, Ray)> {
 		let reflected = reflect(&unit_vector(&r_in.direction()),&rec.normal);
-		let scattered = Ray::new(rec.p, (reflected + self.fuzz * random_unit_vector()));
+		let scattered = Ray::new(rec.p, reflected + self.fuzz * random_unit_vector());
 		Some((self.albedo, scattered))
 	}
 }

@@ -144,7 +144,7 @@ pub fn dot(u: &Vec3, v: &Vec3) -> f64 {
 	u.x * v.x + u.y * v.y + u.z * v.z
 }
 
-pub fn cross(u: &Vec3, v: &Vec3) -> Vec3 {
+pub fn _cross(u: &Vec3, v: &Vec3) -> Vec3 {
 	Vec3::new(
 		u.y * v.z - u.z * v.y,
 		u.z * v.x - u.x * u.z,
@@ -158,7 +158,7 @@ pub fn unit_vector(v: &Vec3) -> Vec3 {
 
 // Random generators
 
-pub fn random_vec3() -> Vec3 {
+pub fn _random_vec3() -> Vec3 {
 	Vec3::new(random_double(), random_double(), random_double())
 }
 
@@ -166,7 +166,7 @@ pub fn random_vec3_range(min: f64, max: f64) -> Vec3 {
 	Vec3::new(random_range(min, max), random_range(min, max), random_range(min, max))
 }
 
-pub fn random_on_hemisphere(normal: &Vec3) -> Vec3 {
+pub fn _random_on_hemisphere(normal: &Vec3) -> Vec3 {
 	let on_unit_sphere = random_unit_vector();
 
 	if dot(&on_unit_sphere, normal) > 0. {
