@@ -157,7 +157,7 @@ fn thread_get_ray(cam: Arc<Camera>, i: i32, j: i32) -> Ray {
 	let ray_origin = cam.center;
 	let ray_direction = pixel_sample - ray_origin;
 
-	Ray::new(&ray_origin, &ray_direction)
+	Ray::new(ray_origin, ray_direction)
 
 }
 
