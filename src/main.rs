@@ -10,7 +10,7 @@ mod material;
 
 // type aliasing
 use std::rc::Rc;
-use material::{Lambertian, Metal, Dielectric};
+use material::{Lambertian, Metal, Dielectric, Material};
 use sphere::Sphere;
 use hittable::HittableList;
 use render::{Camera, render};
@@ -26,14 +26,14 @@ fn main() {
         objects: vec![]
     };
 
-    let ground = Rc::new(Lambertian::new(Color::new(0.8, 0.8, 0.0)));
-    let center = Rc::new(Lambertian::new(
+    let ground = Material::Lambertian(Lambertian::new(Color::new(0.8, 0.8, 0.0)));
+    let center = Material::Lambertian(Lambertian::new(
         Color::new(0.1, 0.2, 0.5)
     ));
-    let left = Rc::new(Dielectric::new(
+    let left = Material::Dielectric(Dielectric::new(
         1.5
     ));
-    let right = Rc::new(Metal::new(
+    let right = Material::Metal(Metal::new(
         Color::new(0.8, 0.6, 0.2),
         0.
     ));
@@ -41,35 +41,29 @@ fn main() {
     world.objects.push(Rc::new(Sphere::new(
         Point3::new(0., 0., -1.),
         0.5,
-        center.clone()
+        center
 
     )));
 
     world.objects.push(Rc::new(Sphere::new(
         Point3::new(0., -1000.5, -1.),
         1000.,
-        ground.clone()
+        ground
     )));
     world.objects.push(Rc::new(Sphere::new(
         Point3::new(-1., 0., -1.),
         0.5,
-        left.clone()
-    )));
-
-    world.objects.push(Rc::new(Sphere::new(
-        Point3::new(-1., 0., -1.),
-        -0.4,
-        left.clone()
+        left
     )));
 
     world.objects.push(Rc::new(Sphere::new(
         Point3::new(1., 0., -1.),
         0.5,
-        right.clone()
+        right
     )));
 
     // Camera
-    let cam = Camera::new(16. / 9., 1000, 400, 50, 90.);
+    let cam = Camera::new(16. / 9., 600, 1000, 50, 90.);
 
     render(&cam, &world);
 

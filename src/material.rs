@@ -6,13 +6,30 @@ use crate::{color::Color,
 	utils::random_double
 };
 
-pub trait Material {
+pub enum Material {
+	Lambertian(Lambertian),
+	Metal(Metal),
+	Dielectric(Dielectric),
+}
+
+impl MatFn for Material {
+	fn scatter(&self, r_in: &Ray, rec: &HitRecord) -> Option<(Color, Ray)> {
+		match self {
+			Material::Lambertian(l) => l.scatter(r_in, rec),
+			Material::Metal(m) => m.scatter(r_in, rec),
+			Material::Dielectric(d) => d.scatter(r_in, rec)
+		}
+	}
+}
+
+pub trait MatFn {
 	fn scatter(
 		&self,
 		r_in: &Ray,
 		rec: &HitRecord,
 	) -> Option<(Color, Ray)>;
 }
+
 
 pub struct Lambertian {
 	albedo: Color,
@@ -25,7 +42,7 @@ impl Lambertian {
 	}
 }
 
-impl Material for Lambertian {
+impl MatFn for Lambertian {
 	fn scatter(&self, _r_in: &Ray, rec: &HitRecord) -> Option<(Color, Ray)> {
 		let scatter_direction = rec.normal + random_unit_vector();
 		let scatter_direction = if scatter_direction.near_zero() { rec.normal } else { scatter_direction };
@@ -37,25 +54,6 @@ impl Material for Lambertian {
 
 	}
 
-}
-
-pub struct PerfectLambertian {
-	albedo: Color
-}
-
-impl PerfectLambertian {
-	pub fn _new(albedo: Color) -> Self {
-		PerfectLambertian { albedo }
-	}
-}
-
-impl Material for PerfectLambertian {
-	fn scatter(&self, _r_in: &Ray, rec: &HitRecord) -> Option<(Color, Ray)> {
-		Some((
-			self.albedo,
-			Ray::new(rec.p, rec.normal)
-		))
-	}
 }
 
 pub struct Metal {
@@ -70,7 +68,7 @@ impl Metal {
 	}
 }
 
-impl Material for Metal {
+impl MatFn for Metal {
 	fn scatter(&self, r_in: &Ray, rec: &HitRecord) -> Option<(Color, Ray)> {
 		let reflected = reflect(&unit_vector(&r_in.direction()),&rec.normal);
 		let scattered = Ray::new(rec.p, reflected + self.fuzz * random_unit_vector());
@@ -97,7 +95,7 @@ impl Dielectric {
 	}
 }
 
-impl Material for Dielectric {
+impl MatFn for Dielectric {
 	fn scatter(&self, r_in: &Ray, rec: &HitRecord) -> Option<(Color, Ray)> {
 		let refraction_ratio = if rec.front_face {1.0 / self.ir } else { self.ir };
 

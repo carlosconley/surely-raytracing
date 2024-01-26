@@ -5,6 +5,7 @@ use crate::ray::Ray;
 use crate::vec3::{unit_vector, Point3, Vec3};
 use crate::hittable::{Hittable, HittableList};
 use crate::utils::{random_double, INF};
+use crate::material::MatFn;
 
 pub struct Camera {
 	pub aspect_ratio: f64,

@@ -5,23 +5,23 @@ use crate::vec3::{Point3, Vec3, dot};
 
 use::std::rc::Rc;
 
-pub struct HitRecord {
+pub struct HitRecord<'material> {
 	pub p: Point3, // intersection point
 	pub normal: Vec3, // normal at hit
-	pub mat: Rc<dyn Material>,
+	pub mat: &'material Material,
 	pub t: f64, // ray length
 	pub front_face: bool,
 }
 
-impl HitRecord {
-	pub fn new(p: Point3, t:f64, r: &Ray, normal: &Vec3, mat: Rc<dyn Material>) -> Self {
-		let front_face = dot(&r.direction(), normal) < 0.;
+impl HitRecord<'_> {
+	pub fn set_face_normal(&self, r: &Ray, outward_normal: &Vec3 ) -> Self {
+		let front_face = dot(&r.direction(), outward_normal) < 0.;
 		HitRecord {
-			p,
-			t,
-			mat,
+			p: self.p,
+			mat: self.mat,
 			front_face,
-			normal: if front_face { normal.clone() } else { -normal.clone() }
+			t: self.t,
+			normal: if front_face { *outward_normal } else { -*outward_normal }
 		}
 	}
 }
@@ -29,9 +29,6 @@ impl HitRecord {
 pub trait Hittable {
 	fn hit(&self, r: &Ray, ray_t: &Interval) -> Option<HitRecord>;
 
-	/*fn shadow_hit(&self, r: &Ray, ray_t: &Interval) -> Option<HitRecord> {
-		None
-	}*/
 }
 
 pub struct HittableList {
@@ -61,18 +58,5 @@ impl Hittable for HittableList {
 		rec
 
 	}
-	/*fn shadow_hit(&self, r: &Ray, ray_t: &Interval) -> Option<HitRecord> {
-		let mut rec = None;
 
-		for object in self.objects.iter() {
-			match object.hit(r, ray_t) {
-				Some(temp_rec) => {
-					return Some(temp_rec);
-				}
-				_ => ()
-			}
-		}
-
-		rec
-	}*/
 }
