@@ -80,19 +80,26 @@ impl Camera {
 }
 
 fn _render_thread(cam: Arc<Camera>, samples: i32, world: Arc<HittableList>) {
-	for j in 0..cam.image_height {
+	let mut thread_pixels = vec![vec![Color::new_zero(); cam.image_width as usize]; cam.image_height as usize];
+	for j in 0..cam.image_height  {
         if j % (cam.image_height / 100) == 0 { eprint!("\r Progress: {}% ", j * 100 / cam.image_height); }
         for i in 0..cam.image_width {
-			let mut pixel_color = Vec3::new_zero();
-			for _sample in 0..samples {
-				let r = thread_get_ray(cam.clone(), i, j);
-				pixel_color = pixel_color + ray_color_threaded(&r,  cam.max_depth, world.clone());
-			}
 			let y = j as usize;
 			let x = i as usize;
-			// lock
-			let pixels = &mut cam.pixels.lock().unwrap();
-			pixels[y][x] = pixels[y][x] + pixel_color;
+			for _sample in 0..samples {
+				let r = thread_get_ray(cam.clone(), i, j);
+				thread_pixels[y][x] = thread_pixels[y][x] + ray_color_threaded(&r,  cam.max_depth, world.clone());
+			}
+        }
+    }
+
+	// lock
+	let pixels = &mut cam.pixels.lock().unwrap();
+	for j in 0..cam.image_height  {
+        for i in 0..cam.image_width {
+			let y = j as usize;
+			let x = i as usize;
+			pixels[y][x] = pixels[y][x] + thread_pixels[y][x];
 			// unlock
         }
     }
@@ -101,7 +108,7 @@ fn _render_thread(cam: Arc<Camera>, samples: i32, world: Arc<HittableList>) {
 }
 
 pub fn render(cam: Arc<Camera>, world: Arc<HittableList>) {
-	let threads = 1; 
+	let threads = 8; 
 	let samples = (cam.samples_per_pixel as f32 / threads as f32).ceil() as i32;
 	let ray_count = threads * samples;
 	eprintln!("Rendering with {} thread(s) and {} samples per pixel", threads, samples);
