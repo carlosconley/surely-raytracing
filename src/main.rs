@@ -10,7 +10,7 @@ mod material;
 
 // type aliasing
 use std::rc::Rc;
-use material::{Lambertian, Metal};
+use material::{Lambertian, Metal, Dielectric};
 use sphere::Sphere;
 use hittable::HittableList;
 use render::{Camera, render};
@@ -27,10 +27,15 @@ fn main() {
     };
 
     let ground = Rc::new(Lambertian::new(Color::new(0.8, 0.8, 0.0)));
-    let center = Rc::new(Lambertian::new(Color::new(0.7, 0.3, 0.3)));
-    let left = Rc::new(Metal::new(Color::new(0.8, 0.8, 0.8)));
+    let center = Rc::new(Lambertian::new(
+        Color::new(0.1, 0.2, 0.5)
+    ));
+    let left = Rc::new(Dielectric::new(
+        1.5
+    ));
     let right = Rc::new(Metal::new(
-        Color::new(0.8, 0.6, 0.2)
+        Color::new(0.8, 0.6, 0.2),
+        0.
     ));
 
     world.objects.push(Rc::new(Sphere::new(
@@ -39,9 +44,10 @@ fn main() {
         center.clone()
 
     )));
+
     world.objects.push(Rc::new(Sphere::new(
-        Point3::new(0., -100.5, -1.),
-        100.,
+        Point3::new(0., -1000.5, -1.),
+        1000.,
         ground.clone()
     )));
     world.objects.push(Rc::new(Sphere::new(
@@ -49,23 +55,21 @@ fn main() {
         0.5,
         left.clone()
     )));
+
+    world.objects.push(Rc::new(Sphere::new(
+        Point3::new(-1., 0., -1.),
+        -0.4,
+        left.clone()
+    )));
+
     world.objects.push(Rc::new(Sphere::new(
         Point3::new(1., 0., -1.),
         0.5,
         right.clone()
     )));
 
-    /*
-    // random sphere generation
-    for _ in 0..100 {
-        world.objects.push(Rc::new(Sphere::new(
-            vec3::random_vec3_range(-10., 10.) - Vec3::new(0., 0., 10.5),
-            utils::random_range(0.1, 1.0)
-        )))
-    }*/
-
     // Camera
-    let cam = Camera::new(16. / 9., 1280, 400, 25);
+    let cam = Camera::new(16. / 9., 800, 100, 50, 90.);
 
     render(&cam, &world);
 

@@ -2,7 +2,7 @@
 use crate::interval::Interval;
 use crate::color::{Color, write_color};
 use crate::ray::Ray;
-use crate::vec3::{unit_vector, Point3, Vec3, dot};
+use crate::vec3::{unit_vector, Point3, Vec3};
 use crate::hittable::{Hittable, HittableList};
 use crate::utils::{random_double, INF};
 
@@ -11,6 +11,7 @@ pub struct Camera {
 	pub image_width: i32,
 	pub samples_per_pixel: i32,
 	pub max_depth: i32,
+	pub vfov: f64, // Vertical view angle (field of view)
 	image_height: i32,
 	center: Point3,
 	pixel00_loc: Point3,
@@ -25,22 +26,25 @@ impl Default for Camera {
 			16. / 9.,
 			100,
 			10,
-			10
+			10,
+			90.
 		)
 	}
 }
 
 impl Camera {
-	pub fn new(aspect_ratio: f64, image_width: i32, samples_per_pixel: i32, max_depth: i32) -> Self {
+	pub fn new(aspect_ratio: f64, image_width: i32, samples_per_pixel: i32, max_depth: i32, vfov: f64) -> Self {
 		// Calculate the image height, ensure that it's at least 1
 		let image_height = (image_width as f64 / aspect_ratio) as i32;
 		let image_height = if image_height < 1 { 1 } else {image_height};
 
 		// Camera
 		let focal_length = 1.0;
+		let theta = vfov.to_radians();
+		let h = (theta / 2.).tan();
 
 		// Viewport widths less than one are ok since they are real vallued
-		let viewport_height = 2.;
+		let viewport_height = 2. * h * focal_length;
 		let viewport_width = viewport_height * image_width as f64 / image_height as f64;
 		let center = Point3::new(0., 0., 0.);
 
@@ -61,6 +65,7 @@ impl Camera {
 			image_width,
 			image_height,
 			center,
+			vfov,
 			pixel00_loc,
 			pixel_delta_u,
 			pixel_delta_v,
@@ -98,7 +103,7 @@ fn get_ray(cam: &Camera, i: i32, j: i32) -> Ray {
 	let ray_origin = cam.center;
 	let ray_direction = pixel_sample - ray_origin;
 
-	Ray::new(&ray_origin, &ray_direction)
+	Ray::new(ray_origin, ray_direction)
 
 }
 
@@ -131,7 +136,7 @@ fn ray_color(r: &Ray, depth: i32, world: &dyn Hittable) -> Color {
 
 }
 
-fn do_sun(r: &Ray, world: &dyn Hittable) -> Color {
+/*fn do_sun(r: &Ray, world: &dyn Hittable) -> Color {
 	let sun = unit_vector(&Vec3::new(1., 1., 1.));
 	let sun_color = Color::new(1., 1., 1.);
 
@@ -139,9 +144,10 @@ fn do_sun(r: &Ray, world: &dyn Hittable) -> Color {
 }
 
 fn compute_sun(sun: &Vec3, sun_color: &Color, r: &Ray, world: &dyn Hittable) -> Color {
-	match world.hit(&Ray::new(&r.origin(), &sun), &Interval {min: 0.001, max: f64::INFINITY}) {
+	let unit_direction = unit_vector(&r.direction());
+	return dot(&unit_direction, &sun).max(0.) * *sun_color;
+	match world.hit(&Ray::new(r.origin(), &sun), &Interval {min: 0.001, max: f64::INFINITY}) {
 		None => {
-			let unit_direction = unit_vector(&r.direction());
 
 			let sun_intensity = dot(&unit_direction, &sun);
 
@@ -157,20 +163,21 @@ fn compute_sun(sun: &Vec3, sun_color: &Color, r: &Ray, world: &dyn Hittable) -> 
 		}
 	}
 }
-/* fn ray_color_sun(r: &Ray, depth: i32, world: &dyn Hittable, normal: Option<&Vec3>) -> Color {
+*/
+/*fn ray_color_sun(r: &Ray, depth: i32, world: &dyn Hittable, normal: Option<&Vec3>) -> Color {
 	// check if we hit bounce limit
 	if depth <= 0 { return Vec3::new_zero() }
 
 	match world.hit(r, &Interval {min: 0.0001, max:  INF }) {
 		Some(rec) => {
 			match rec.mat.scatter(r, &rec) {
-				Some((attenuation, scattered)) => attenuation * ray_color(&scattered, depth - 1, world, Some(&rec.normal)),
+				Some((attenuation, scattered)) => attenuation * ray_color_sun(&scattered, depth - 1, world, Some(&rec.normal)),
 				None => Color::new_zero()
 			}
 		}
 		None => {
 			let unit_direction = unit_vector(&r.direction());
-			match normal {	
+			match normal {
 				None => {
 					let a = 0.5 * (unit_direction.y() + 1.0);
 
@@ -180,10 +187,11 @@ fn compute_sun(sun: &Vec3, sun_color: &Color, r: &Ray, world: &dyn Hittable) -> 
 				Some (normal) => {
 					let sun = unit_vector(&Vec3::new(1.0, 1., 0.));
 					let sun_color = Color::new(1., 1., 1.);
-					match world.shadow_hit(&Ray::new(&r.origin(), &sun), &Interval {min: 0.0001, max:  INF}) {
-						None => dot(&sun, &normal).max(0.) * sun_color,
-						Some(_) => Color::new_zero()	
-					}
+					//match world.shadow_hit(&Ray::new(&r.origin(), &sun), &Interval {min: 0.0001, max:  INF}) {
+						//None => dot(&sun, &normal).max(0.) * sun_color,
+						//Some(_) => Color::new_zero()
+					//}
+					dot(&sun, &unit_direction) * sun_color
 				}
 			}
 		}
