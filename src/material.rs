@@ -6,7 +6,7 @@ use crate::{color::Color,
 	utils::random_double
 };
 
-pub trait Material {
+pub trait Material: Sync + Send {
 	fn scatter(
 		&self,
 		r_in: &Ray,
