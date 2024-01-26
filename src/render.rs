@@ -108,7 +108,7 @@ fn _render_thread(cam: Arc<Camera>, samples: i32, world: Arc<HittableList>) {
 }
 
 pub fn render(cam: Arc<Camera>, world: Arc<HittableList>) {
-	let threads = 8; 
+	let threads = 8;
 	let samples = (cam.samples_per_pixel as f32 / threads as f32).ceil() as i32;
 	let ray_count = threads * samples;
 	eprintln!("Rendering with {} thread(s) and {} samples per pixel", threads, samples);
@@ -138,7 +138,7 @@ pub fn render(cam: Arc<Camera>, world: Arc<HittableList>) {
 			cam.pixels.lock().unwrap()[y][x] = pixel_color;
         }
     }*/
-	
+
 	for handle in handles {
 		handle.join().unwrap();
 	}
@@ -197,7 +197,7 @@ fn ray_color_threaded(r: &Ray, depth: i32, world: Arc<dyn Hittable>) -> Color {
 	match world.hit(r, &Interval {min: 0.0001, max:  INF }) {
 		Some(rec) => {
 			match rec.mat.scatter(r, &rec) {
-				Some((attenuation, scattered)) => attenuation * ray_color_threaded(&scattered, depth - 1, world.clone()),
+				Some((attenuation, scattered)) => attenuation * ray_color_threaded(&scattered, depth - 1, world),
 				None => Color::new_zero()
 			}
 		}
