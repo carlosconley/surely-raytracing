@@ -6,6 +6,7 @@ use crate::{color::Color,
 	utils::random_double
 };
 
+#[derive(Clone)]
 pub enum Material {
 	Lambertian(Lambertian),
 	Metal(Metal),
@@ -31,6 +32,7 @@ pub trait MatFn {
 }
 
 
+#[derive(Clone)]
 pub struct Lambertian {
 	albedo: Color,
 }
@@ -56,6 +58,7 @@ impl MatFn for Lambertian {
 
 }
 
+#[derive(Clone)]
 pub struct Metal {
 	albedo: Color,
 	fuzz: f64
@@ -76,6 +79,7 @@ impl MatFn for Metal {
 	}
 }
 
+#[derive(Clone)]
 pub struct Dielectric {
 	ir: f64 // Index of Refraction
 }

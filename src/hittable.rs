@@ -1,9 +1,9 @@
 use crate::material::Material;
+use crate::sphere::Object;
 use crate::ray::Ray;
 use crate::interval::Interval;
 use crate::vec3::{Point3, Vec3, dot};
 
-use::std::rc::Rc;
 
 pub struct HitRecord<'material> {
 	pub p: Point3, // intersection point
@@ -32,13 +32,10 @@ pub trait Hittable {
 }
 
 pub struct HittableList {
-	pub objects: Vec<Rc<dyn Hittable>>
+	pub objects: Vec<Object>
 
 }
 
-impl HittableList {
-
-}
 
 impl Hittable for HittableList {
 	fn hit(&self, r: &Ray, ray_t: &Interval) -> Option<HitRecord> {
