@@ -12,7 +12,8 @@ mod material;
 use material::{Lambertian, Metal, Dielectric};
 use object::Sphere;
 use hittable::HittableList;
-use render::{Camera, render};
+use render::init_pixels;
+use render::{Camera, render_par, render};
 use utils::random_double;
 use utils::random_range;
 use vec3::random_vec3;
@@ -114,8 +115,9 @@ fn main() {
     world.objects.push(Sphere::new(Point3::new(-4., 1., 0.), 1.0, material2));
     world.objects.push(Sphere::new(Point3::new(4., 1., 0.), 1.0, material3));
     // Camera
-    let cam = Camera::new(16. / 9., 1200, 500, 50, 20., Point3::new(13., 2., 3.), Point3::new(0., 0., 0.), Vec3::new(0., 1., 0.), 0.6, 10.0);
+    let cam = Camera::new(16. / 9., 400, 100, 50, 20., Point3::new(13., 2., 3.), Point3::new(0., 0., 0.), Vec3::new(0., 1., 0.), 0., 10.);
 
-    render(&cam, &world);
+    let mut pixels = init_pixels(&cam);
+    render_par(&cam, &world, &mut pixels);
 
 }

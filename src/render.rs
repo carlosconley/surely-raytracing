@@ -6,6 +6,7 @@ use crate::vec3::{unit_vector, Point3, Vec3, cross, random_in_unit_disk};
 use crate::hittable::{Hittable, HittableList};
 use crate::utils::{random_double, INF};
 use crate::material::MatFn;
+use rayon::prelude::*;
 
 pub struct Camera {
 	pub aspect_ratio: f64,
@@ -55,6 +56,7 @@ impl Camera {
 		let h = (theta / 2.).tan();
 
 		// Viewport widths less than one are ok since they are real vallued
+		let focus_dist = if focus_dist <= 0. { 1. } else { focus_dist };
 		let viewport_height = 2. * h * focus_dist;
 		let viewport_width = viewport_height * image_width as f64 / image_height as f64;
 
@@ -97,22 +99,74 @@ impl Camera {
 	}
 }
 
+pub fn init_pixels(cam: &Camera) -> Vec<Color> {
+	let mut pixels = vec![Color::new_zero(); (cam.image_height * cam.image_width) as usize];
 
-pub fn render(cam: &Camera, world: &HittableList) {
+	/*for j in 0..cam.image_height {
+		for i in 0..cam.image_width {
+			pixels[(j * cam.image_width + i) as usize] = Color::new(j as f64 / cam.image_height as f64, i as f64 / cam.image_width as f64, 0.) * 50.;
+		}
+	};*/
+
+	pixels
+}
+
+pub fn render(cam: &Camera, world: &HittableList, pixels: &mut Vec<Color>) {
 	println!("P3\n{} {}\n255", cam.image_width, cam.image_height);
 
 	for j in 0..cam.image_height {
         eprint!("\r Progress: {:.3}% ", j as f32 / (cam.image_height - 1) as f32 * 100.);
         for i in 0..cam.image_width {
-			let mut pixel_color = Vec3::new_zero();
+			//let mut pixel_color = Vec3::new_zero();
+			let index = (j * cam.image_width + i) as usize; 
 			for _sample in 0..cam.samples_per_pixel {
 				let r = get_ray(cam, i, j);
-				pixel_color = pixel_color + ray_color(&r,  cam.max_depth, world);
+				pixels[index] =  
+				pixels[index] + ray_color(&r,  cam.max_depth, world);
 			}
-            write_color(&mut std::io::stdout(), &pixel_color, cam.samples_per_pixel as f64);
+            write_color(&mut std::io::stdout(), &pixels[index], cam.samples_per_pixel as f64);
         }
     }
-	eprintln!("\rDone                           ");
+
+	eprintln!("\rDone!                           ");
+}
+
+pub fn render_par(cam: &Camera, world: &HittableList, pixels: &mut Vec<Color>) {
+	println!("P3\n{} {}\n255", cam.image_width, cam.image_height);
+	let rows: Vec<(usize, &mut [Color])> = pixels.chunks_mut(cam.image_width as usize).enumerate().collect();
+	rows.into_par_iter().for_each(|(j, row)| {
+        for i in 0..cam.image_width {
+        eprint!("\r Progress: {:.3}% ", i as f32 / (cam.image_width - 1) as f32 * 100.);
+			//let mut pixel_color = Vec3::new_zero();
+			let idx = i as usize;
+			//let index = j * (cam.image_width + i) as usize; 
+			for _sample in 0..cam.samples_per_pixel {
+				let r = get_ray(cam, i, j as i32);
+				//let color = ray_color(&r,  cam.max_depth, world);
+				//eprintln!("{} {} {}", color.x(), color.y(), color.z());	
+				row[idx] = row[idx] + ray_color(&r,  cam.max_depth, world);
+			}
+            //write_color(&mut std::io::stdout(), &pixels[], cam.samples_per_pixel as f64);
+        }
+    });
+
+	eprintln!("\rWriting...            !");
+	for j in 0..cam.image_height {
+        //eprint!("\r Progress: {:.3}% ", j as f32 / (cam.image_height - 1) as f32 * 100.);
+        for i in 0..cam.image_width {
+			//let mut pixel_color = Vec3::new_zero();
+			let index = (j * cam.image_width + i) as usize; 
+			// for _sample in 0..cam.samples_per_pixel {
+			// 	let r = get_ray(cam, i, j);
+			// 	pixels[index] =  
+			// 	pixels[index] + ray_color(&r,  cam.max_depth, world);
+			// }
+            write_color(&mut std::io::stdout(), &pixels[index], cam.samples_per_pixel as f64);
+        }
+    }
+	
+
+	eprintln!("\rDone!                           ");
 }
 
 fn get_ray(cam: &Camera, i: i32, j: i32) -> Ray {
