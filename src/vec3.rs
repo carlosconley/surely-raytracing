@@ -1,4 +1,4 @@
-use std::io::Write;
+use std::{f64::consts::PI, io::Write};
 use std::ops;
 use crate::utils::{random_double, random_range};
 
@@ -144,11 +144,11 @@ pub fn dot(u: &Vec3, v: &Vec3) -> f64 {
 	u.x * v.x + u.y * v.y + u.z * v.z
 }
 
-pub fn _cross(u: &Vec3, v: &Vec3) -> Vec3 {
+pub fn cross(u: &Vec3, v: &Vec3) -> Vec3 {
 	Vec3::new(
 		u.y * v.z - u.z * v.y,
-		u.z * v.x - u.x * u.z,
-		u.x * v.y - u.y * v.z
+		u.z * v.x - u.x * v.z,
+		u.x * v.y - u.y * v.x
 	)
 }
 
@@ -157,6 +157,15 @@ pub fn unit_vector(v: &Vec3) -> Vec3 {
 }
 
 // Random generators
+
+pub fn random_in_unit_disk() -> Vec3 {
+	loop {
+		let p = Vec3::new(random_range(-1., 1.), random_range(-1., 1.), 0.);
+		if p.length_squared() < 1. {
+			return p;
+		}
+	}
+}
 
 pub fn _random_vec3() -> Vec3 {
 	Vec3::new(random_double(), random_double(), random_double())

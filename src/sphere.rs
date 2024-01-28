@@ -23,8 +23,8 @@ pub struct Sphere {
 }
 
 impl Sphere {
-	pub fn new(center: Point3, radius: f64, mat: Material) -> Self {
-		Sphere { center, radius, mat }
+	pub fn new(center: Point3, radius: f64, mat: Material) -> Object {
+		Object::Sphere(Sphere { center, radius, mat })
 	}
 }
 

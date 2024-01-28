@@ -2,7 +2,7 @@
 use crate::interval::Interval;
 use crate::color::{Color, write_color};
 use crate::ray::Ray;
-use crate::vec3::{unit_vector, Point3, Vec3};
+use crate::vec3::{unit_vector, Point3, Vec3, cross, random_in_unit_disk};
 use crate::hittable::{Hittable, HittableList};
 use crate::utils::{random_double, INF};
 use crate::material::MatFn;
@@ -13,11 +13,17 @@ pub struct Camera {
 	pub samples_per_pixel: i32,
 	pub max_depth: i32,
 	pub vfov: f64, // Vertical view angle (field of view)
+	pub lookat: Point3,
+	pub vup: Vec3,
+	pub defocus_angle: f64,
+	pub focus_dist: f64,
 	image_height: i32,
 	center: Point3,
 	pixel00_loc: Point3,
 	pixel_delta_u: Vec3,
 	pixel_delta_v: Vec3,
+	defocus_disk_u: Vec3,
+	defocus_disk_v: Vec3
 
 }
 
@@ -28,38 +34,48 @@ impl Default for Camera {
 			100,
 			10,
 			10,
-			90.
+			90.,
+			Point3::new(0., 0., -1.),
+			Point3::new_zero(), 
+			Vec3::new(0., 1., 0.),
+			0., 10.
 		)
 	}
 }
 
 impl Camera {
-	pub fn new(aspect_ratio: f64, image_width: i32, samples_per_pixel: i32, max_depth: i32, vfov: f64) -> Self {
+	pub fn new(aspect_ratio: f64, image_width: i32, samples_per_pixel: i32, max_depth: i32, vfov: f64, lookfrom: Point3, lookat: Point3, vup: Vec3, defocus_angle: f64, focus_dist: f64) -> Self {
 		// Calculate the image height, ensure that it's at least 1
 		let image_height = (image_width as f64 / aspect_ratio) as i32;
 		let image_height = if image_height < 1 { 1 } else {image_height};
 
+		let center = lookfrom;
 		// Camera
-		let focal_length = 1.0;
 		let theta = vfov.to_radians();
 		let h = (theta / 2.).tan();
 
 		// Viewport widths less than one are ok since they are real vallued
-		let viewport_height = 2. * h * focal_length;
+		let viewport_height = 2. * h * focus_dist;
 		let viewport_width = viewport_height * image_width as f64 / image_height as f64;
-		let center = Point3::new(0., 0., 0.);
+
+		// Calculate u, v, w basis vectors for camera
+		let w = unit_vector(&(lookfrom - lookat));
+		let u = unit_vector(&cross(&vup, &w));
+		let v = cross(&w, &u);
 
 		// Calculate the vectors across the horizontal and down the vertical viewport edges
-		let viewport_u = Vec3::new(viewport_width, 0., 0.,);
-		let viewport_v = Vec3::new(0., -viewport_height, 0.);
+		let viewport_u = viewport_width * u;
+		let viewport_v = viewport_height * -v;
 
 		// Calcualte the horizontal and vertical delta vectors from pixel to pixel
 		let pixel_delta_u = viewport_u / image_width as f64;
 		let pixel_delta_v = viewport_v / image_height as f64;
 
 		// Calculate the location of the upper left pixel
-		let viewport_upper_left = center - Vec3::new(0., 0., focal_length) - viewport_u / 2. - viewport_v / 2.;
+		let viewport_upper_left = center - (focus_dist * w) - viewport_u / 2. - viewport_v / 2.; 
 		let pixel00_loc = viewport_upper_left + 0.5 * (pixel_delta_u + pixel_delta_v);
+
+		let defocus_radius = focus_dist * (defocus_angle / 2.).to_radians().tan();
 
 		return Camera {
 			aspect_ratio,
@@ -71,7 +87,12 @@ impl Camera {
 			pixel_delta_u,
 			pixel_delta_v,
 			samples_per_pixel,
-			max_depth
+			max_depth,
+			lookat, vup,
+			defocus_angle,
+			focus_dist,
+			defocus_disk_u: u * defocus_radius,
+			defocus_disk_v: v * defocus_radius
 		};
 	}
 }
@@ -95,17 +116,27 @@ pub fn render(cam: &Camera, world: &HittableList) {
 }
 
 fn get_ray(cam: &Camera, i: i32, j: i32) -> Ray {
-	// Geta randomly sampled camera ray for the pixel at location i, j
+	// Get a randomly sampled camera ray for the pixel at location i, j, originating from camera defocus disk
 
 	let pixel_center = cam.pixel00_loc + (i as f64 * cam.pixel_delta_u) + (j as f64 * cam.pixel_delta_v);
 	// you can replace sample_square with sample_disk for circular pixels
 	let pixel_sample = pixel_center + pixel_sample_square(&cam);
 
-	let ray_origin = cam.center;
+	let ray_origin = if cam.defocus_angle <= 0. {
+		cam.center
+	} else {
+		defocus_disk_sample(cam)
+	};
+
 	let ray_direction = pixel_sample - ray_origin;
 
 	Ray::new(ray_origin, ray_direction)
 
+}
+
+fn defocus_disk_sample(cam: &Camera) -> Point3 {
+	let p = random_in_unit_disk();
+	cam.center + (p.x() * cam.defocus_disk_u) + (p.y() * cam.defocus_disk_v)
 }
 
 fn pixel_sample_square(cam: &Camera) -> Vec3 {

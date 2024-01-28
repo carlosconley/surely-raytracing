@@ -39,8 +39,8 @@ pub struct Lambertian {
 
 
 impl Lambertian {
-	pub fn new(albedo: Color) -> Self {
-		Lambertian { albedo }
+	pub fn new(albedo: Color) -> Material {
+		Material::Lambertian(Lambertian { albedo })
 	}
 }
 
@@ -65,9 +65,9 @@ pub struct Metal {
 }
 
 impl Metal {
-	pub fn new(albedo: Color, f: f64) -> Self {
+	pub fn new(albedo: Color, f: f64) -> Material {
 		let fuzz = if f < 1. { f } else { 1. };
-		Metal { albedo, fuzz }
+		Material::Metal(Metal { albedo, fuzz })
 	}
 }
 
@@ -85,8 +85,8 @@ pub struct Dielectric {
 }
 
 impl Dielectric {
-	pub fn new(ir: f64) -> Self {
-		Dielectric { ir }
+	pub fn new(ir: f64) -> Material {
+		Material::Dielectric(Dielectric { ir })
 	}
 
 	fn reflectance(&self, cosine: f64, ref_idx: f64) -> f64 {
