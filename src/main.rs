@@ -77,7 +77,7 @@ fn main() {
     )));*/
 
     let ground_material = Lambertian::new(Color::new(0.5, 0.5, 0.5));
-    world.objects.push(Sphere::new(Point3::new(0., -1000., 0.), 1000., ground_material));
+    world.objects.push(Sphere::new(Point3::new(0., -2000., 0.), 2000., ground_material));
 
     for a in -11..11 {
         for b in -11..11 {
@@ -98,7 +98,7 @@ fn main() {
                     let sphere_material = Metal::new(albedo, fuzz);
                     world.objects.push(Sphere::new(center, 0.2, sphere_material));
                 } else {
-                    let ir = 1.5; 
+                    let ir = random_range(1.2, 1.6); 
                     let sphere_material = Dielectric::new(ir);
                     world.objects.push(Sphere::new(center, 0.2, sphere_material));
                 }
@@ -115,7 +115,7 @@ fn main() {
     world.objects.push(Sphere::new(Point3::new(-4., 1., 0.), 1.0, material2));
     world.objects.push(Sphere::new(Point3::new(4., 1., 0.), 1.0, material3));
     // Camera
-    let cam = Camera::new(16. / 9., 400, 100, 50, 20., Point3::new(13., 2., 3.), Point3::new(0., 0., 0.), Vec3::new(0., 1., 0.), 0., 10.);
+    let cam = Camera::new(16. / 9., 800, 400, 40, 20., Point3::new(13., 2., 3.), Point3::new(0., 0., 0.), Vec3::new(0., 1., 0.), 0., 10.);
 
     let mut pixels = init_pixels(&cam);
     render_par(&cam, &world, &mut pixels);

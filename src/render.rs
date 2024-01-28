@@ -100,22 +100,15 @@ impl Camera {
 }
 
 pub fn init_pixels(cam: &Camera) -> Vec<Color> {
-	let mut pixels = vec![Color::new_zero(); (cam.image_height * cam.image_width) as usize];
-
-	/*for j in 0..cam.image_height {
-		for i in 0..cam.image_width {
-			pixels[(j * cam.image_width + i) as usize] = Color::new(j as f64 / cam.image_height as f64, i as f64 / cam.image_width as f64, 0.) * 50.;
-		}
-	};*/
-
-	pixels
+	vec![Color::new_zero(); (cam.image_height * cam.image_width) as usize]
 }
 
 pub fn render(cam: &Camera, world: &HittableList, pixels: &mut Vec<Color>) {
 	println!("P3\n{} {}\n255", cam.image_width, cam.image_height);
 
 	for j in 0..cam.image_height {
-        eprint!("\r Progress: {:.3}% ", j as f32 / (cam.image_height - 1) as f32 * 100.);
+        eprint!("\r Progress: {:.1}% ", j as f32 / (cam.image_height - 1) as f32 * 100.);
+
         for i in 0..cam.image_width {
 			//let mut pixel_color = Vec3::new_zero();
 			let index = (j * cam.image_width + i) as usize; 
@@ -133,34 +126,37 @@ pub fn render(cam: &Camera, world: &HittableList, pixels: &mut Vec<Color>) {
 
 pub fn render_par(cam: &Camera, world: &HittableList, pixels: &mut Vec<Color>) {
 	println!("P3\n{} {}\n255", cam.image_width, cam.image_height);
-	let rows: Vec<(usize, &mut [Color])> = pixels.chunks_mut(cam.image_width as usize).enumerate().collect();
+
+	let threads: usize = std::thread::available_parallelism().expect("Could not read number of threads").into(); 
+
+	rayon::ThreadPoolBuilder::new().num_threads(threads.into()).build_global().expect("Can't build global threads");
+	let chunk_size = ((cam.image_height * cam.image_width) as f64 / threads as f64) as usize;
+
+	let rows: Vec<(usize, &mut [Color])> = pixels.chunks_mut(chunk_size).enumerate().collect();
+
+	eprintln!("Rendering on {} threads", threads);
+
 	rows.into_par_iter().for_each(|(j, row)| {
-        for i in 0..cam.image_width {
-        eprint!("\r Progress: {:.3}% ", i as f32 / (cam.image_width - 1) as f32 * 100.);
-			//let mut pixel_color = Vec3::new_zero();
-			let idx = i as usize;
-			//let index = j * (cam.image_width + i) as usize; 
+        for i in 0..row.len() {
+			if j + 4 == threads.into() && i % (chunk_size / 1000) == 0 { eprint!("\r Progress: {:.1}% ", i as f32 / chunk_size as f32 * 100.) };
+
+			let idx = (j * chunk_size + i) as i32;
+			let x = idx as i32 % cam.image_width;
+			let y = idx / cam.image_width;
+
 			for _sample in 0..cam.samples_per_pixel {
-				let r = get_ray(cam, i, j as i32);
-				//let color = ray_color(&r,  cam.max_depth, world);
-				//eprintln!("{} {} {}", color.x(), color.y(), color.z());	
-				row[idx] = row[idx] + ray_color(&r,  cam.max_depth, world);
+				let r = get_ray(cam, x, y);
+	
+				row[i] = row[i] + ray_color(&r,  cam.max_depth, world);
 			}
-            //write_color(&mut std::io::stdout(), &pixels[], cam.samples_per_pixel as f64);
         }
     });
 
-	eprintln!("\rWriting...            !");
+	eprintln!("\rWriting...            ");
 	for j in 0..cam.image_height {
-        //eprint!("\r Progress: {:.3}% ", j as f32 / (cam.image_height - 1) as f32 * 100.);
         for i in 0..cam.image_width {
-			//let mut pixel_color = Vec3::new_zero();
 			let index = (j * cam.image_width + i) as usize; 
-			// for _sample in 0..cam.samples_per_pixel {
-			// 	let r = get_ray(cam, i, j);
-			// 	pixels[index] =  
-			// 	pixels[index] + ray_color(&r,  cam.max_depth, world);
-			// }
+			
             write_color(&mut std::io::stdout(), &pixels[index], cam.samples_per_pixel as f64);
         }
     }
