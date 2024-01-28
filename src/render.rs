@@ -127,14 +127,28 @@ pub fn render(cam: &Camera, world: &HittableList, pixels: &mut Vec<Color>) {
 pub fn render_par(cam: &Camera, world: &HittableList, pixels: &mut Vec<Color>) {
 	println!("P3\n{} {}\n255", cam.image_width, cam.image_height);
 
-	let threads: usize = std::thread::available_parallelism().expect("Could not read number of threads").into(); 
 
-	rayon::ThreadPoolBuilder::new().num_threads(threads.into()).build_global().expect("Can't build global threads");
+	let threads: usize = match std::thread::available_parallelism() {
+		Ok(ok) => ok.into(),
+		Err(_) => {return render_par(cam, world, pixels);}
+	}; 
+
+	let threads = match rayon::ThreadPoolBuilder::new().num_threads(threads.into()).build_global() {
+		Ok(_ok) => { 
+			eprintln!("Rendering on {} threads", threads);
+			threads
+		}
+		Err(_) => {
+			eprintln!("rendering on {} threads", 4);
+			4
+		}
+	};
+
 	let chunk_size = ((cam.image_height * cam.image_width) as f64 / threads as f64) as usize;
 
 	let rows: Vec<(usize, &mut [Color])> = pixels.chunks_mut(chunk_size).enumerate().collect();
 
-	eprintln!("Rendering on {} threads", threads);
+	
 
 	rows.into_par_iter().for_each(|(j, row)| {
         for i in 0..row.len() {

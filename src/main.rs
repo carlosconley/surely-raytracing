@@ -115,7 +115,7 @@ fn main() {
     world.objects.push(Sphere::new(Point3::new(-4., 1., 0.), 1.0, material2));
     world.objects.push(Sphere::new(Point3::new(4., 1., 0.), 1.0, material3));
     // Camera
-    let cam = Camera::new(16. / 9., 800, 400, 40, 20., Point3::new(13., 2., 3.), Point3::new(0., 0., 0.), Vec3::new(0., 1., 0.), 0., 10.);
+    let cam = Camera::new(16. / 9., 400, 100, 40, 20., Point3::new(13., 2., 3.), Point3::new(0., 0., 0.), Vec3::new(0., 1., 0.), 0., 10.);
 
     let mut pixels = init_pixels(&cam);
     render_par(&cam, &world, &mut pixels);
