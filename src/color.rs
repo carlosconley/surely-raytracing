@@ -1,31 +1,30 @@
+use std::f64::consts::E;
 use std::io::Write;
 use crate::interval::Interval;
 use crate::vec3::Vec3;
 
 pub type Color = Vec3;
 
-pub fn write_color<W: Write>(out: &mut W, pixel_color: &Color, samples_per_pixel: f64) {
+pub fn write_color<W: Write>(out: &mut W, pixel_color: &Color, samples_per_pixel: f64, exposure_val: Option<f64>) {
 	let scale = 1.0 / samples_per_pixel;
-
-	let r = pixel_color.x() * scale;
-	let g = pixel_color.y() * scale;
-	let b = pixel_color.z() * scale;
-
-	let r = linear_to_gamma_fast(r);
-	let g = linear_to_gamma_fast(g);
-	let b = linear_to_gamma_fast(b);
 
 	let intensity = Interval {
 		min: 0.,
 		max: 0.999
 	};
 
+	let rgb = [pixel_color.x(), pixel_color.y(), pixel_color.z()];
+
+	let rgb = rgb.map(|x| x * scale).map(|linear| {
+		match exposure_val {
+			Some(val) => exposure(linear, val),
+			None => linear
+		}
+	}).map(linear_to_gamma_fast).map(|rgb| (256. * intensity.clamp(rgb)) as u8);
+
 	writeln!(
 		out,
-		"{} {} {}",
-		(256. * intensity.clamp(r)) as u8,
-		(256. * intensity.clamp(g)) as u8,
-		(256. * intensity.clamp(b)) as u8
+		"{} {} {}", rgb[0], rgb[1], rgb[2]
 	)
 	.expect("Error writing pixel to buffer");
 
@@ -33,6 +32,10 @@ pub fn write_color<W: Write>(out: &mut W, pixel_color: &Color, samples_per_pixel
 }
 
 //const _GAMMA: f64 = 1. / 2.4;
+
+fn exposure(linear:f64, v: f64) -> f64 {
+	1. - E.powf(-v * linear)
+}
 
 fn _gamma_to_linear(gamma: f64) -> f64 {
 	if gamma <= 0.04045 {

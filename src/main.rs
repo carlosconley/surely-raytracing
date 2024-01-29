@@ -50,12 +50,6 @@ fn scene_three_spheres() {
     world.objects.push(center_sphere);
 
     world.objects.push(Sphere::new(
-        Point3::new(0., -100.5, -1.),
-        100.,
-        ground
-    ));
-
-    world.objects.push(Sphere::new(
         Point3::new(-1., 0., -1.),
         0.5,
         left.clone()
@@ -67,6 +61,11 @@ fn scene_three_spheres() {
         left
     ));
 
+    world.objects.push(Sphere::new(
+        Point3::new(0., -100.5, -1.),
+        100.,
+        ground
+    ));
 
     world.objects.push(Sphere::new(
         Point3::new(1., 0., -1.),
@@ -74,7 +73,7 @@ fn scene_three_spheres() {
         right
     ));
 
-    let cam = Camera::new(16. / 9., 400, 200, 40, 20., Point3::new(13., 2., 3.), Point3::new(0., 0., 0.), Vec3::new(0., 1., 0.), 0.6, 10.);
+    let cam = Camera::new(16. / 9., 800, 1000, 50, 90., Point3::new(0., 0., 0.), Point3::new(0., 0., -1.), Vec3::new(0., 1., 0.), 2., 1.);
 
     let mut pixels = init_pixels(&cam);
 

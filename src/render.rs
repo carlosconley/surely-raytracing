@@ -1,8 +1,11 @@
 
+
+use std::f64::consts::E;
+
 use crate::interval::Interval;
 use crate::color::{Color, write_color};
 use crate::ray::Ray;
-use crate::vec3::{unit_vector, Point3, Vec3, cross, random_in_unit_disk};
+use crate::vec3::{cross, dot, random_in_unit_disk, unit_vector, Point3, Vec3};
 use crate::hittable::{Hittable, HittableList};
 use crate::utils::{random_double, INF};
 use crate::material::MatFn;
@@ -117,7 +120,7 @@ pub fn render(cam: &Camera, world: &HittableList, pixels: &mut Vec<Color>) {
 				pixels[index] =
 				pixels[index] + ray_color(&r,  cam.max_depth, world);
 			}
-            write_color(&mut std::io::stdout(), &pixels[index], cam.samples_per_pixel as f64);
+            write_color(&mut std::io::stdout(), &pixels[index], cam.samples_per_pixel as f64, None);
         }
     }
 
@@ -173,12 +176,9 @@ pub fn render_par(cam: &Camera, world: &HittableList, pixels: &mut Vec<Color>) {
 
 	eprintln!("\rWriting...            ");
 
-	for j in 0..cam.image_height {
-        for i in 0..cam.image_width {
-			let index = (j * cam.image_width + i) as usize;
-
-            write_color(&mut std::io::stdout(), &pixels[index], cam.samples_per_pixel as f64);
-        }
+	let exposure = auto_expose(cam, pixels);
+	for pixel in pixels {
+		write_color(&mut std::io::stdout(), pixel, cam.samples_per_pixel as f64, Some(exposure));
     }
 
 	eprintln!("\rDone!                           ");
@@ -231,73 +231,32 @@ fn ray_color(r: &Ray, depth: i32, world: &dyn Hittable) -> Color {
 			let unit_direction = unit_vector(&r.direction());
 			let a = 0.5 * (unit_direction.y() + 1.0);
 
-			(1.0 - a) * Color::new(1.0, 1.0, 1.) + a * Color::new(0.5, 0.7, 1.0)
-		}
-	}
+			//return (1.0 - a) * Color::new(1.0, 1.0, 1.) + a * Color::new(0.5, 0.7, 1.0);
+			let limit = 0.95;
 
-}
+			let sun_amount = dot(&unit_direction, &unit_vector(&Vec3::new(1., 1., 1.)));
 
-/*fn do_sun(r: &Ray, world: &dyn Hittable) -> Color {
-	let sun = unit_vector(&Vec3::new(1., 1., 1.));
-	let sun_color = Color::new(1., 1., 1.);
-
-	compute_sun(&sun, &sun_color, r, world)
-}
-
-fn compute_sun(sun: &Vec3, sun_color: &Color, r: &Ray, world: &dyn Hittable) -> Color {
-	let unit_direction = unit_vector(&r.direction());
-	return dot(&unit_direction, &sun).max(0.) * *sun_color;
-	match world.hit(&Ray::new(r.origin(), &sun), &Interval {min: 0.001, max: f64::INFINITY}) {
-		None => {
-
-			let sun_intensity = dot(&unit_direction, &sun);
-
-			if sun_intensity > 0. {
-				sun_intensity * sun_color.clone()
+			if sun_amount >= limit {
+				Color::new(1., 1., 1.)
 			} else {
 				Color::new_zero()
 			}
 		}
-		_ => {
-			//eprintln!("woah this shouldn't happen");
-			Color::new_zero()
-		}
 	}
-}
-*/
-/*fn ray_color_sun(r: &Ray, depth: i32, world: &dyn Hittable, normal: Option<&Vec3>) -> Color {
-	// check if we hit bounce limit
-	if depth <= 0 { return Vec3::new_zero() }
-
-	match world.hit(r, &Interval {min: 0.0001, max:  INF }) {
-		Some(rec) => {
-			match rec.mat.scatter(r, &rec) {
-				Some((attenuation, scattered)) => attenuation * ray_color_sun(&scattered, depth - 1, world, Some(&rec.normal)),
-				None => Color::new_zero()
-			}
-		}
-		None => {
-			let unit_direction = unit_vector(&r.direction());
-			match normal {
-				None => {
-					let a = 0.5 * (unit_direction.y() + 1.0);
-
-					Color::new_zero()
-				//(1.0 - a) * Color::new(1.0, 1.0, 1.) + a * Color::new(0.5, 0.7, 1.0)
-				}
-				Some (normal) => {
-					let sun = unit_vector(&Vec3::new(1.0, 1., 0.));
-					let sun_color = Color::new(1., 1., 1.);
-					//match world.shadow_hit(&Ray::new(&r.origin(), &sun), &Interval {min: 0.0001, max:  INF}) {
-						//None => dot(&sun, &normal).max(0.) * sun_color,
-						//Some(_) => Color::new_zero()
-					//}
-					dot(&sun, &unit_direction) * sun_color
-				}
-			}
-		}
-	}
-	// This sets the skybox + ambient light
 
 }
-*/
+
+fn auto_expose(cam: &Camera, pixels: &Vec<Color>) -> f64 {
+	let medium_weight = 1. / (cam.image_height * cam.image_width) as f64;
+	let mut medium_point: f64= 0.;
+	let mut max = INF;
+	let mut min: f64 = 0.;
+	for current_color in pixels {
+		let luminance = dot(&Color::new(0.2126, 0.71516, 0.072169), &current_color);
+		medium_point = medium_point + medium_weight * luminance;
+	}
+
+	let bounds = Interval { max, min };
+	eprintln!("{}", medium_point);
+	475.615 / medium_point
+}
