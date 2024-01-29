@@ -176,9 +176,9 @@ pub fn render_par(cam: &Camera, world: &HittableList, pixels: &mut Vec<Color>) {
 
 	eprintln!("\rWriting...            ");
 
-	let exposure = auto_expose(cam, pixels);
+	//let exposure = auto_expose(cam, pixels);
 	for pixel in pixels {
-		write_color(&mut std::io::stdout(), pixel, cam.samples_per_pixel as f64, Some(exposure));
+		write_color(&mut std::io::stdout(), pixel, cam.samples_per_pixel as f64, None);
     }
 
 	eprintln!("\rDone!                           ");
@@ -231,8 +231,8 @@ fn ray_color(r: &Ray, depth: i32, world: &dyn Hittable) -> Color {
 			let unit_direction = unit_vector(&r.direction());
 			let a = 0.5 * (unit_direction.y() + 1.0);
 
-			//return (1.0 - a) * Color::new(1.0, 1.0, 1.) + a * Color::new(0.5, 0.7, 1.0);
-			let limit = 0.95;
+			return (1.0 - a) * Color::new(1.0, 1.0, 1.) + a * Color::new(0.5, 0.7, 1.0);
+			/*let limit = 0.95;
 
 			let sun_amount = dot(&unit_direction, &unit_vector(&Vec3::new(1., 1., 1.)));
 
@@ -240,7 +240,7 @@ fn ray_color(r: &Ray, depth: i32, world: &dyn Hittable) -> Color {
 				Color::new(1., 1., 1.)
 			} else {
 				Color::new_zero()
-			}
+			}*/
 		}
 	}
 
@@ -258,5 +258,5 @@ fn auto_expose(cam: &Camera, pixels: &Vec<Color>) -> f64 {
 
 	let bounds = Interval { max, min };
 	eprintln!("{}", medium_point);
-	475.615 / medium_point
+	475.615 / bounds.clamp(medium_point)
 }
