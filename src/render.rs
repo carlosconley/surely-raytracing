@@ -145,6 +145,7 @@ pub fn render_par(cam: &Camera, world: &HittableList, pixels: &mut Vec<Color>) {
 
 	// let chunk_size = ((cam.image_height * cam.image_width) as f64 / (threads * 12) as f64) as usize;
 	let chunk_size = (cam.image_width * cam.image_height / (threads * 12) as i32) as usize; // ratio taken from https://github.com/dps/rust-raytracer
+	let chunk_size = (cam.image_width * 3) as usize;
 
 	let rows: Vec<(usize, &mut [Color])> = pixels.chunks_mut(chunk_size).enumerate().collect();
 	let len = rows.len();
@@ -172,9 +173,9 @@ pub fn render_par(cam: &Camera, world: &HittableList, pixels: &mut Vec<Color>) {
 
 	eprintln!("\rWriting...            ");
 
-	let exposure = auto_expose(cam, pixels);
+	//let exposure = auto_expose(cam, pixels);
 	for pixel in pixels {
-		write_color(&mut std::io::stdout(), pixel, cam.samples_per_pixel as f64, Some(exposure));
+		write_color(&mut std::io::stdout(), pixel, cam.samples_per_pixel as f64, None);
     }
 
 	eprintln!("\rDone!                           ");
@@ -251,6 +252,9 @@ fn auto_expose(cam: &Camera, pixels: &Vec<Color>) -> f64 {
 	}
 	let medium_point = medium_point / (cam.samples_per_pixel * cam.samples_per_pixel) as f64;
 	// turn this off if you want the images to match what we see in shirley's books 
-	let exposure = -0.6_f64.ln() / medium_point.sqrt();
-	exposure
+	if medium_point > 0.001 {
+		-0.6_f64.ln() / medium_point.sqrt()
+	} else {
+		1.
+	}
 }
