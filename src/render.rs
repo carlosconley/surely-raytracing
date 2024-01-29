@@ -37,7 +37,7 @@ impl Default for Camera {
 			10,
 			90.,
 			Point3::new(0., 0., -1.),
-			Point3::new_zero(), 
+			Point3::new_zero(),
 			Vec3::new(0., 1., 0.),
 			0., 10.
 		)
@@ -74,7 +74,7 @@ impl Camera {
 		let pixel_delta_v = viewport_v / image_height as f64;
 
 		// Calculate the location of the upper left pixel
-		let viewport_upper_left = center - (focus_dist * w) - viewport_u / 2. - viewport_v / 2.; 
+		let viewport_upper_left = center - (focus_dist * w) - viewport_u / 2. - viewport_v / 2.;
 		let pixel00_loc = viewport_upper_left + 0.5 * (pixel_delta_u + pixel_delta_v);
 
 		let defocus_radius = focus_dist * (defocus_angle / 2.).to_radians().tan();
@@ -111,10 +111,10 @@ pub fn render(cam: &Camera, world: &HittableList, pixels: &mut Vec<Color>) {
 
         for i in 0..cam.image_width {
 			//let mut pixel_color = Vec3::new_zero();
-			let index = (j * cam.image_width + i) as usize; 
+			let index = (j * cam.image_width + i) as usize;
 			for _sample in 0..cam.samples_per_pixel {
 				let r = get_ray(cam, i, j);
-				pixels[index] =  
+				pixels[index] =
 				pixels[index] + ray_color(&r,  cam.max_depth, world);
 			}
             write_color(&mut std::io::stdout(), &pixels[index], cam.samples_per_pixel as f64);
@@ -130,51 +130,56 @@ pub fn render_par(cam: &Camera, world: &HittableList, pixels: &mut Vec<Color>) {
 
 	let threads: usize = match std::thread::available_parallelism() {
 		Ok(ok) => ok.into(),
-		Err(_) => {return render_par(cam, world, pixels);}
-	}; 
-
-	let threads = match rayon::ThreadPoolBuilder::new().num_threads(threads.into()).build_global() {
-		Ok(_ok) => { 
-			eprintln!("Rendering on {} threads", threads);
-			threads
-		}
 		Err(_) => {
-			eprintln!("rendering on {} threads", 4);
-			4
+			let threads = rayon::current_num_threads();
+			eprintln!("Could not count cores, defaulting to {} threads", threads);
+			threads
 		}
 	};
 
-	let chunk_size = ((cam.image_height * cam.image_width) as f64 / threads as f64) as usize;
+
+	match rayon::ThreadPoolBuilder::new().num_threads(threads.into()).build_global() {
+		Ok(_ok) => eprintln!("Rendering on {} threads", threads),
+		Err(_) => eprintln!("Could not set threads, rayon will use 4 threads.")
+	};
+
+
+	// let chunk_size = ((cam.image_height * cam.image_width) as f64 / (threads * 12) as f64) as usize;
+	let chunk_size = (cam.image_width * 3) as usize; // ratio taken from https://github.com/dps/rust-raytracer
 
 	let rows: Vec<(usize, &mut [Color])> = pixels.chunks_mut(chunk_size).enumerate().collect();
+	let len = rows.len();
 
-	
+	let progress_chunk = 100. / len as f64;
 
+	let counter = std::sync::Mutex::new(0);
 	rows.into_par_iter().for_each(|(j, row)| {
         for i in 0..row.len() {
-			if j + 4 == threads.into() && i % (chunk_size / 1000) == 0 { eprint!("\r Progress: {:.1}% ", i as f32 / chunk_size as f32 * 100.) };
-
 			let idx = (j * chunk_size + i) as i32;
 			let x = idx as i32 % cam.image_width;
 			let y = idx / cam.image_width;
 
 			for _sample in 0..cam.samples_per_pixel {
 				let r = get_ray(cam, x, y);
-	
+
 				row[i] = row[i] + ray_color(&r,  cam.max_depth, world);
 			}
         }
+
+		let mut counter = counter.lock().expect("should work");
+		*counter += 1;
+		eprint!("\rProgress {:.1}%", *counter as f64 * progress_chunk);
     });
 
 	eprintln!("\rWriting...            ");
+
 	for j in 0..cam.image_height {
         for i in 0..cam.image_width {
-			let index = (j * cam.image_width + i) as usize; 
-			
+			let index = (j * cam.image_width + i) as usize;
+
             write_color(&mut std::io::stdout(), &pixels[index], cam.samples_per_pixel as f64);
         }
     }
-	
 
 	eprintln!("\rDone!                           ");
 }
