@@ -1,7 +1,4 @@
 
-
-use std::f64::consts::E;
-
 use crate::interval::Interval;
 use crate::color::{Color, write_color};
 use crate::ray::Ray;
@@ -113,7 +110,6 @@ pub fn render(cam: &Camera, world: &HittableList, pixels: &mut Vec<Color>) {
         eprint!("\r Progress: {:.1}% ", j as f32 / (cam.image_height - 1) as f32 * 100.);
 
         for i in 0..cam.image_width {
-			//let mut pixel_color = Vec3::new_zero();
 			let index = (j * cam.image_width + i) as usize;
 			for _sample in 0..cam.samples_per_pixel {
 				let r = get_ray(cam, i, j);
@@ -148,7 +144,7 @@ pub fn render_par(cam: &Camera, world: &HittableList, pixels: &mut Vec<Color>) {
 
 
 	// let chunk_size = ((cam.image_height * cam.image_width) as f64 / (threads * 12) as f64) as usize;
-	let chunk_size = (cam.image_width * 3) as usize; // ratio taken from https://github.com/dps/rust-raytracer
+	let chunk_size = (cam.image_width * cam.image_height / (threads * 12) as i32) as usize; // ratio taken from https://github.com/dps/rust-raytracer
 
 	let rows: Vec<(usize, &mut [Color])> = pixels.chunks_mut(chunk_size).enumerate().collect();
 	let len = rows.len();
@@ -176,9 +172,9 @@ pub fn render_par(cam: &Camera, world: &HittableList, pixels: &mut Vec<Color>) {
 
 	eprintln!("\rWriting...            ");
 
-	//let exposure = auto_expose(cam, pixels);
+	let exposure = auto_expose(cam, pixels);
 	for pixel in pixels {
-		write_color(&mut std::io::stdout(), pixel, cam.samples_per_pixel as f64, None);
+		write_color(&mut std::io::stdout(), pixel, cam.samples_per_pixel as f64, Some(exposure));
     }
 
 	eprintln!("\rDone!                           ");
@@ -232,15 +228,15 @@ fn ray_color(r: &Ray, depth: i32, world: &dyn Hittable) -> Color {
 			let a = 0.5 * (unit_direction.y() + 1.0);
 
 			return (1.0 - a) * Color::new(1.0, 1.0, 1.) + a * Color::new(0.5, 0.7, 1.0);
-			/*let limit = 0.95;
+			// let limit = 0.95;
 
-			let sun_amount = dot(&unit_direction, &unit_vector(&Vec3::new(1., 1., 1.)));
+			// let sun_amount = dot(&unit_direction, &unit_vector(&Vec3::new(1., 1., 1.)));
 
-			if sun_amount >= limit {
-				Color::new(1., 1., 1.)
-			} else {
-				Color::new_zero()
-			}*/
+			// if sun_amount >= limit {
+			// 	Color::new(1., 1., 1.)
+			// } else {
+			// 	Color::new_zero()
+			// }
 		}
 	}
 
@@ -249,14 +245,12 @@ fn ray_color(r: &Ray, depth: i32, world: &dyn Hittable) -> Color {
 fn auto_expose(cam: &Camera, pixels: &Vec<Color>) -> f64 {
 	let medium_weight = 1. / (cam.image_height * cam.image_width) as f64;
 	let mut medium_point: f64= 0.;
-	let mut max = INF;
-	let mut min: f64 = 0.;
 	for current_color in pixels {
 		let luminance = dot(&Color::new(0.2126, 0.71516, 0.072169), &current_color);
-		medium_point = medium_point + medium_weight * luminance;
+		medium_point = medium_point + medium_weight * (luminance * luminance);
 	}
-
-	let bounds = Interval { max, min };
-	eprintln!("{}", medium_point);
-	475.615 / bounds.clamp(medium_point)
+	let medium_point = medium_point / (cam.samples_per_pixel * cam.samples_per_pixel) as f64;
+	// turn this off if you want the images to match what we see in shirley's books 
+	let exposure = -0.6_f64.ln() / medium_point.sqrt();
+	exposure
 }
