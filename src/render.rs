@@ -1,6 +1,7 @@
 
 use crate::interval::Interval;
 use crate::color::{Color, write_color};
+use crate::object::Sun;
 use crate::ray::Ray;
 use crate::vec3::{cross, dot, random_in_unit_disk, unit_vector, Point3, Vec3};
 use crate::hittable::{Hittable, HittableList};
@@ -18,6 +19,8 @@ pub struct Camera {
 	pub vup: Vec3,
 	pub defocus_angle: f64,
 	pub focus_dist: f64,
+	pub background: Color,
+	pub auto_exposure: bool,
 	image_height: i32,
 	center: Point3,
 	pixel00_loc: Point3,
@@ -39,13 +42,14 @@ impl Default for Camera {
 			Point3::new(0., 0., -1.),
 			Point3::new_zero(),
 			Vec3::new(0., 1., 0.),
-			0., 10.
+			0., 10.,
+			Color::new(0.70, 0.80, 1.00),
 		)
 	}
 }
 
 impl Camera {
-	pub fn new(aspect_ratio: f64, image_width: i32, samples_per_pixel: i32, max_depth: i32, vfov: f64, lookfrom: Point3, lookat: Point3, vup: Vec3, defocus_angle: f64, focus_dist: f64) -> Self {
+	pub fn new(aspect_ratio: f64, image_width: i32, samples_per_pixel: i32, max_depth: i32, vfov: f64, lookfrom: Point3, lookat: Point3, vup: Vec3, defocus_angle: f64, focus_dist: f64, background: Color) -> Self {
 		// Calculate the image height, ensure that it's at least 1
 		let image_height = (image_width as f64 / aspect_ratio) as i32;
 		let image_height = if image_height < 1 { 1 } else {image_height};
@@ -94,7 +98,9 @@ impl Camera {
 			defocus_angle,
 			focus_dist,
 			defocus_disk_u: u * defocus_radius,
-			defocus_disk_v: v * defocus_radius
+			defocus_disk_v: v * defocus_radius,
+			background,
+			auto_exposure: false
 		};
 	}
 }
@@ -114,7 +120,7 @@ pub fn render(cam: &Camera, world: &HittableList, pixels: &mut Vec<Color>) {
 			for _sample in 0..cam.samples_per_pixel {
 				let r = get_ray(cam, i, j);
 				pixels[index] =
-				pixels[index] + ray_color(&r,  cam.max_depth, world);
+				pixels[index] + ray_color(&r,  cam.max_depth, world, &vec![], cam);
 			}
             write_color(&mut std::io::stdout(), &pixels[index], cam.samples_per_pixel as f64, None);
         }
@@ -123,7 +129,7 @@ pub fn render(cam: &Camera, world: &HittableList, pixels: &mut Vec<Color>) {
 	eprintln!("\rDone!                           ");
 }
 
-pub fn render_par(cam: &Camera, world: &HittableList, pixels: &mut Vec<Color>) {
+pub fn render_par(cam: &Camera, world: &HittableList, pixels: &mut Vec<Color>, suns: &Vec<Sun>) {
 	println!("P3\n{} {}\n255", cam.image_width, cam.image_height);
 
 
@@ -144,7 +150,6 @@ pub fn render_par(cam: &Camera, world: &HittableList, pixels: &mut Vec<Color>) {
 
 
 	// let chunk_size = ((cam.image_height * cam.image_width) as f64 / (threads * 12) as f64) as usize;
-	let chunk_size = (cam.image_width * cam.image_height / (threads * 12) as i32) as usize; // ratio taken from https://github.com/dps/rust-raytracer
 	let chunk_size = (cam.image_width * 3) as usize;
 
 	let rows: Vec<(usize, &mut [Color])> = pixels.chunks_mut(chunk_size).enumerate().collect();
@@ -162,7 +167,7 @@ pub fn render_par(cam: &Camera, world: &HittableList, pixels: &mut Vec<Color>) {
 			for _sample in 0..cam.samples_per_pixel {
 				let r = get_ray(cam, x, y);
 
-				row[i] = row[i] + ray_color(&r,  cam.max_depth, world);
+				row[i] = row[i] + ray_color(&r,  cam.max_depth, world, suns, cam);
 			}
         }
 
@@ -173,9 +178,9 @@ pub fn render_par(cam: &Camera, world: &HittableList, pixels: &mut Vec<Color>) {
 
 	eprintln!("\rWriting...            ");
 
-	//let exposure = auto_expose(cam, pixels);
+	let exposure = if cam.auto_exposure { Some(auto_expose(cam, pixels)) } else { None } ;
 	for pixel in pixels {
-		write_color(&mut std::io::stdout(), pixel, cam.samples_per_pixel as f64, None);
+		write_color(&mut std::io::stdout(), pixel, cam.samples_per_pixel as f64, exposure);
     }
 
 	eprintln!("\rDone!                           ");
@@ -212,32 +217,28 @@ fn pixel_sample_square(cam: &Camera) -> Vec3 {
 	px * cam.pixel_delta_u + py * cam.pixel_delta_v
 }
 
-fn ray_color(r: &Ray, depth: i32, world: &dyn Hittable) -> Color {
+fn ray_color(r: &Ray, depth: i32, world: &dyn Hittable, suns: &Vec<Sun>, cam: &Camera) -> Color {
 	// check if we hit bounce limit
 	if depth <= 0 { return Vec3::new_zero() }
 
 	match world.hit(r, &Interval {min: 0.0001, max:  INF }) {
 		Some(rec) => {
 			match rec.mat.scatter(r, &rec) {
-				Some((attenuation, scattered)) => attenuation * ray_color(&scattered, depth - 1, world),
+				Some((attenuation, scattered)) => attenuation * ray_color(&scattered, depth - 1, world, suns, cam),
 				None => Color::new_zero()
 			}
 		}
 		None => {
 			// This sets the skybox + ambient light
-			let unit_direction = unit_vector(&r.direction());
-			let a = 0.5 * (unit_direction.y() + 1.0);
+			let sun_light = match suns
+				.iter()
+				.map(|sun| sun.hit(&r) )
+				.reduce(|s1, s2| s1 + s2 ) {
+					Some(light) => light,
+					None => Color::new_zero()
+			};
 
-			return (1.0 - a) * Color::new(1.0, 1.0, 1.) + a * Color::new(0.5, 0.7, 1.0);
-			// let limit = 0.95;
-
-			// let sun_amount = dot(&unit_direction, &unit_vector(&Vec3::new(1., 1., 1.)));
-
-			// if sun_amount >= limit {
-			// 	Color::new(1., 1., 1.)
-			// } else {
-			// 	Color::new_zero()
-			// }
+			cam.background + sun_light
 		}
 	}
 

@@ -1,6 +1,7 @@
 use crate::interval::Interval;
 use crate::hittable::{Hittable, HitRecord};
-use crate::vec3::{Point3, dot};
+use crate::vec3::{Point3, dot, Vec3, unit_vector};
+use crate::color::Color;
 use crate::ray::Ray;
 use crate::material::Material;
 
@@ -64,4 +65,27 @@ impl Hittable for Sphere {
 			rec.set_face_normal(r, &outward_normal)
 		)
 	}
+}
+pub struct Sun {
+	pub direction: Vec3,
+	albedo: Color,
+	limit: f64
+}
+
+impl Sun {
+	pub fn new(direction: Vec3, albedo: Color, angular_diameter: f64) -> Sun {
+		let limit = 1. - angular_diameter / 180.;
+
+		Sun { direction: unit_vector(&direction), albedo, limit }
+	}	
+
+	pub fn hit(&self, r: &Ray) -> Color { 
+		let unit_direction = unit_vector(&r.direction());
+		if dot(&unit_direction, &self.direction) > self.limit {
+			self.albedo
+		} else {
+			Color::new_zero()
+		}
+	}
+
 }

@@ -10,7 +10,7 @@ mod material;
 
 // type aliasing
 use material::{Lambertian, Metal, Dielectric};
-use object::Sphere;
+use object::{Sphere, Sun};
 use hittable::HittableList;
 use render::{Camera, init_pixels};
 use utils::{random_double, random_range};
@@ -18,9 +18,73 @@ use vec3::{Point3, Vec3, random_vec3, random_vec3_range};
 use color::Color;
 
 fn main() {
-    scene_three_spheres();
+    scene_sun_spheres();
 }
 
+fn scene_sun_spheres() {
+    let mut world = HittableList {
+        objects: vec![]
+    };
+
+    let ground = Lambertian::new(Color::new(0.8, 0.8, 0.0));
+
+    let center = Lambertian::new(
+        Color::new(0.1, 0.2, 0.5)
+    );
+    let left = Dielectric::new(
+        1.5
+    );
+    let right = Metal::new(
+        Color::new(0.8, 0.6, 0.2),
+        0.
+    );
+
+    // let binding for testing
+    let center_sphere = Sphere::new(
+        Point3::new(0., 0., -1.),
+        0.5,
+        center
+    );
+
+    world.objects.push(center_sphere);
+
+    world.objects.push(Sphere::new(
+        Point3::new(-1., 0., -1.25),
+        0.5,
+        left.clone()
+    ));
+
+    world.objects.push(Sphere::new(
+        Point3::new(-1., 0., -1.),
+        -0.4,
+        left
+    ));
+
+    world.objects.push(Sphere::new(
+        Point3::new(0., -100.5, -1.),
+        100.,
+        ground
+    ));
+
+    world.objects.push(Sphere::new(
+        Point3::new(1., 0., -0.75),
+        0.5,
+        right
+    ));
+
+    // High sample count required to get a not-too-grainy image because of non-light sampling rng
+    let mut cam = Camera::new(16. / 9., 640, 2500, 50, 90., Point3::new(0., 0., 0.), Point3::new(0., 0., -1.), Vec3::new(0., 1., 0.), 0., 1., Color::new(0.02, 0.05, 0.1));
+
+    // turn on super secret hidden auto_exposure so to adjust for wacky sun brightnesses
+    cam.auto_exposure = true;
+
+    let mut pixels = init_pixels(&cam);
+
+    // this takes about 1.5 minutes on my m2 with 8 cores
+    // make sun super bright so that we accentuate shadows, showing off our nifty sun simulation!
+    crate::render::render_par(&cam, &world, &mut pixels, &vec![Sun::new(Vec3::new(-1., 1., 1.), Color::new(1., 1., 1.) * 100., 2.)]);
+    
+}
 
 fn scene_three_spheres() {
     let mut world = HittableList {
@@ -73,11 +137,11 @@ fn scene_three_spheres() {
         right
     ));
 
-    let cam = Camera::new(16. / 9., 800, 1000, 50, 90., Point3::new(0., 0., 0.), Point3::new(0., 0., -1.), Vec3::new(0., 1., 0.), 2., 1.);
+    let cam = Camera::new(16. / 9., 800, 1000, 50, 90., Point3::new(0., 0., 0.), Point3::new(0., 0., -1.), Vec3::new(0., 1., 0.), 2., 1., Color::new(0.7, 0.8, 1.));
 
     let mut pixels = init_pixels(&cam);
 
-    crate::render::render_par(&cam, &world, &mut pixels);
+    crate::render::render_par(&cam, &world, &mut pixels, &vec![]);
 }
 
 fn scene_random_balls() {
@@ -124,10 +188,10 @@ fn scene_random_balls() {
     world.objects.push(Sphere::new(Point3::new(-4., 1., 0.), 1.0, material2));
     world.objects.push(Sphere::new(Point3::new(4., 1., 0.), 1.0, material3));
     // Camera
-    let cam = Camera::new(16. / 9., 400, 200, 40, 20., Point3::new(13., 2., 3.), Point3::new(0., 0., 0.), Vec3::new(0., 1., 0.), 0.6, 10.);
+    let cam = Camera::new(16. / 9., 400, 200, 40, 20., Point3::new(13., 2., 3.), Point3::new(0., 0., 0.), Vec3::new(0., 1., 0.), 0.6, 10., Color::new(0.7, 0.8, 1.));
 
 
     let mut pixels = init_pixels(&cam);
 
-    crate::render::render_par(&cam, &world, &mut pixels);
+    crate::render::render_par(&cam, &world, &mut pixels, &vec![]);
 }
