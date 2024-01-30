@@ -82,7 +82,7 @@ fn scene_sun_spheres() {
 
     // this takes about 1.5 minutes on my m2 with 8 cores
     // make sun super bright so that we accentuate shadows, showing off our nifty sun simulation!
-    crate::render::render_par(&cam, &world, &mut pixels, &vec![Sun::new(Vec3::new(-1., 1., 1.), Color::new(1., 1., 1.) * 100., 2.)]);
+    crate::render::render_par(&cam, &world, &mut pixels, &vec![Sun::new(Vec3::new(-1., 1., 1.), Color::new(1., 1., 1.) * 10., 2.)]);
     
 }
 

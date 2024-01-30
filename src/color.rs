@@ -20,7 +20,7 @@ pub fn write_color<W: Write>(out: &mut W, pixel_color: &Color, samples_per_pixel
 			Some(val) => exposure(linear, val),
 			None => linear
 		}
-	}).map(linear_to_gamma_fast).map(|rgb| (256. * intensity.clamp(rgb)) as u8);
+	}).map(linear_to_gamma).map(|rgb| (256. * intensity.clamp(rgb)) as u8);
 
 	writeln!(
 		out,
@@ -49,7 +49,7 @@ fn linear_to_gamma_fast(linear: f64) -> f64 {
 	linear.sqrt()
 }
 
-fn _linear_to_gamma(linear: f64) -> f64 {
+fn linear_to_gamma(linear: f64) -> f64 {
 	if linear <= 0.0031308 {
 		12.92 * linear
 	} else {

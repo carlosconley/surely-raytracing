@@ -66,6 +66,8 @@ impl Hittable for Sphere {
 		)
 	}
 }
+
+// A disk light source infinitely far away
 pub struct Sun {
 	pub direction: Vec3,
 	albedo: Color,
