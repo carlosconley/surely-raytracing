@@ -10,7 +10,7 @@ mod material;
 
 // type aliasing
 use material::{Lambertian, Metal, Dielectric};
-use object::{Sphere, Sun};
+use object::{Sphere, Sun, Plane};
 use hittable::HittableList;
 use render::{Camera, init_pixels};
 use utils::{random_double, random_range};
@@ -60,9 +60,9 @@ fn scene_sun_spheres() {
         left
     ));
 
-    world.objects.push(Sphere::new(
-        Point3::new(0., -100.5, -1.),
-        100.,
+    world.objects.push(Plane::new(
+        Point3::new(0., -0.5, 0.),
+        Vec3::new(0., 1., 0.),
         ground
     ));
 
@@ -73,7 +73,7 @@ fn scene_sun_spheres() {
     ));
 
     // High sample count required to get a not-too-grainy image because of non-light sampling rng
-    let mut cam = Camera::new(16. / 9., 640, 2500, 50, 90., Point3::new(0., 0., 0.), Point3::new(0., 0., -1.), Vec3::new(0., 1., 0.), 0., 1., Color::new(0.02, 0.05, 0.1));
+    let mut cam = Camera::new(16. / 9., 640, 1000, 50, 90., Point3::new(0., 0., 0.), Point3::new(0., 0., -1.), Vec3::new(0., 1., 0.), 0., 1., Color::new(0.02, 0.05, 0.1));
 
     // turn on super secret hidden auto_exposure so to adjust for wacky sun brightnesses
     cam.auto_exposure = true;
@@ -83,7 +83,7 @@ fn scene_sun_spheres() {
     // this takes about 1.5 minutes on my m2 with 8 cores
     // make sun super bright so that we accentuate shadows, showing off our nifty sun simulation!
     crate::render::render_par(&cam, &world, &mut pixels, &vec![Sun::new(Vec3::new(-1., 1., 1.), Color::new(1., 1., 1.) * 10., 2.)]);
-    
+
 }
 
 fn scene_three_spheres() {

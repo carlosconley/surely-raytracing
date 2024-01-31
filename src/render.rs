@@ -251,7 +251,7 @@ fn auto_expose(cam: &Camera, pixels: &Vec<Color>) -> f64 {
 		medium_point = medium_point + medium_weight * (luminance * luminance);
 	}
 	let medium_point = medium_point / (cam.samples_per_pixel * cam.samples_per_pixel) as f64;
-	// turn this off if you want the images to match what we see in shirley's books 
+	// turn this off if you want the images to match what we see in shirley's books
 	if medium_point > 0.001 {
 		-0.6_f64.ln() / medium_point.sqrt()
 	} else {

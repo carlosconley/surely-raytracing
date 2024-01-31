@@ -1,19 +1,21 @@
 use crate::interval::Interval;
 use crate::hittable::{Hittable, HitRecord};
-use crate::vec3::{Point3, dot, Vec3, unit_vector};
+use crate::vec3::{self, dot, unit_vector, Point3, Vec3};
 use crate::color::Color;
 use crate::ray::Ray;
 use crate::material::Material;
 
 
 pub enum Object {
-	Sphere(Sphere)
+	Sphere(Sphere),
+	Plane(Plane)
 }
 
 impl Hittable for Object {
 	fn hit(&self, r: &Ray, ray_t: &Interval) -> Option<HitRecord> {
 		match self {
-			Object::Sphere(s) => s.hit(r, ray_t)
+			Object::Sphere(s) => s.hit(r, ray_t),
+			Object::Plane(p) => p.hit(r, ray_t)
 		}
 	}
 }
@@ -79,9 +81,9 @@ impl Sun {
 		let limit = 1. - angular_diameter / 180.;
 
 		Sun { direction: unit_vector(&direction), albedo, limit }
-	}	
+	}
 
-	pub fn hit(&self, r: &Ray) -> Color { 
+	pub fn hit(&self, r: &Ray) -> Color {
 		let unit_direction = unit_vector(&r.direction());
 		if dot(&unit_direction, &self.direction) > self.limit {
 			self.albedo
@@ -90,4 +92,41 @@ impl Sun {
 		}
 	}
 
+}
+
+pub struct Plane {
+	point: Point3,
+	normal: Vec3,
+	mat: Material,
+}
+impl Plane {
+	pub fn new(point: Point3, normal: Vec3, mat: Material) -> Object {
+		Object::Plane(Plane {
+			point, normal: unit_vector(&normal), mat
+		})
+	}
+
+}
+
+impl Hittable for Plane {
+	fn hit(&self, r: &Ray, ray_t: &Interval) -> Option<HitRecord> {
+		let t = dot(&(self.point - r.origin()), &self.normal) / dot(&r.direction(), &self.normal);
+
+		if ray_t.surrounds(t) {
+			let rec = HitRecord {
+			t,
+			p: r.at(t),
+			mat: &self.mat,
+			normal: self.normal,
+			front_face: false
+			};
+
+			let outward_normal = self.normal;
+			Some (
+				rec.set_face_normal(r, &outward_normal)
+			)
+		} else {
+			None
+		}
+	}
 }
