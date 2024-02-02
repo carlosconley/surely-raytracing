@@ -157,7 +157,6 @@ pub fn unit_vector(v: &Vec3) -> Vec3 {
 }
 
 // Random generators
-
 pub fn random_in_unit_disk() -> Vec3 {
 	loop {
 		let p = Vec3::new(random_range(-1., 1.), random_range(-1., 1.), 0.);

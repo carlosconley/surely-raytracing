@@ -81,12 +81,13 @@ impl MatFn for Metal {
 
 #[derive(Clone)]
 pub struct Dielectric {
+	tint: Color,
 	ir: f64 // Index of Refraction
 }
 
 impl Dielectric {
-	pub fn new(ir: f64) -> Material {
-		Material::Dielectric(Dielectric { ir })
+	pub fn new(ir: f64, tint: Color) -> Material {
+		Material::Dielectric(Dielectric { tint, ir })
 	}
 
 	fn reflectance(&self, cosine: f64, ref_idx: f64) -> f64 {
@@ -114,6 +115,6 @@ impl MatFn for Dielectric {
 			refract(&unit_direction, &rec.normal, refraction_ratio)
 		};
 
-		Some((Color::new(1., 1., 1.), Ray::new(rec.p, direction)))
+		Some((self.tint, Ray::new(rec.p, direction)))
 	}
 }

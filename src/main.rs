@@ -32,7 +32,7 @@ fn scene_sun_spheres() {
         Color::new(0.1, 0.2, 0.5)
     );
     let left = Dielectric::new(
-        1.5
+        1.5, Color::new(1., 1., 1.)
     );
     let right = Metal::new(
         Color::new(0.8, 0.6, 0.2),
@@ -97,7 +97,7 @@ fn scene_three_spheres() {
         Color::new(0.1, 0.2, 0.5)
     );
     let left = Dielectric::new(
-        1.5
+        1.5, Color::new(1.0, 0.9, 0.8)
     );
     let right = Metal::new(
         Color::new(0.8, 0.6, 0.2),
@@ -172,7 +172,7 @@ fn scene_random_balls() {
                     world.objects.push(Sphere::new(center, 0.2, sphere_material));
                 } else {
                     let ir = random_range(1.2, 1.6);
-                    let sphere_material = Dielectric::new(ir);
+                    let sphere_material = Dielectric::new(ir, Color::new(1., 1., 1.));
                     world.objects.push(Sphere::new(center, 0.2, sphere_material));
                 }
             }
@@ -180,7 +180,7 @@ fn scene_random_balls() {
         }
     }
 
-    let material1 = Dielectric::new(1.5);
+    let material1 = Dielectric::new(1.5, Color::new(1., 1., 1.));
     let material2 = Lambertian::new(Color::new(0.4, 0.2, 0.1));
     let material3 = Metal::new(Color::new(0.7, 0.6, 0.5), 0.0);
 

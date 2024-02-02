@@ -100,7 +100,7 @@ impl Camera {
 			defocus_disk_u: u * defocus_radius,
 			defocus_disk_v: v * defocus_radius,
 			background,
-			auto_exposure: false
+			auto_exposure: false,
 		};
 	}
 }
@@ -109,25 +109,7 @@ pub fn init_pixels(cam: &Camera) -> Vec<Color> {
 	vec![Color::new_zero(); (cam.image_height * cam.image_width) as usize]
 }
 
-pub fn render(cam: &Camera, world: &HittableList, pixels: &mut Vec<Color>) {
-	println!("P3\n{} {}\n255", cam.image_width, cam.image_height);
 
-	for j in 0..cam.image_height {
-        eprint!("\r Progress: {:.1}% ", j as f32 / (cam.image_height - 1) as f32 * 100.);
-
-        for i in 0..cam.image_width {
-			let index = (j * cam.image_width + i) as usize;
-			for _sample in 0..cam.samples_per_pixel {
-				let r = get_ray(cam, i, j);
-				pixels[index] =
-				pixels[index] + ray_color(&r,  cam.max_depth, world, &vec![], cam);
-			}
-            write_color(&mut std::io::stdout(), &pixels[index], cam.samples_per_pixel as f64, None);
-        }
-    }
-
-	eprintln!("\rDone!                           ");
-}
 
 pub fn render_par(cam: &Camera, world: &HittableList, pixels: &mut Vec<Color>, suns: &Vec<Sun>) {
 	println!("P3\n{} {}\n255", cam.image_width, cam.image_height);
@@ -166,8 +148,8 @@ pub fn render_par(cam: &Camera, world: &HittableList, pixels: &mut Vec<Color>, s
 
 			for _sample in 0..cam.samples_per_pixel {
 				let r = get_ray(cam, x, y);
-
-				row[i] = row[i] + ray_color(&r,  cam.max_depth, world, suns, cam);
+				let color = ray_color(&r,  cam.max_depth, world, suns, cam);
+				row[i] = row[i] + color;
 			}
         }
 
@@ -223,7 +205,9 @@ fn ray_color(r: &Ray, depth: i32, world: &dyn Hittable, suns: &Vec<Sun>, cam: &C
 	match world.hit(r, &Interval {min: 0.0001, max:  INF }) {
 		Some(rec) => {
 			match rec.mat.scatter(r, &rec) {
-				Some((attenuation, scattered)) => attenuation * ray_color(&scattered, depth - 1, world, suns, cam),
+				Some((attenuation, scattered)) => {
+					attenuation + ray_color(&scattered, depth - 1, world, suns, cam)
+				},
 				None => Color::new_zero()
 			}
 		}
@@ -243,6 +227,14 @@ fn ray_color(r: &Ray, depth: i32, world: &dyn Hittable, suns: &Vec<Sun>, cam: &C
 
 }
 
+fn draw_depth(cam: &Camera, depth_buffer: &Vec<i32>) {
+	for depth in depth_buffer {
+		let depth = *depth as f64 / cam.max_depth as f64;
+		write_color(&mut std::io::stdout(),
+		&Color::new(depth, depth, depth), cam.samples_per_pixel as f64, None);
+	}
+}
+
 fn auto_expose(cam: &Camera, pixels: &Vec<Color>) -> f64 {
 	let medium_weight = 1. / (cam.image_height * cam.image_width) as f64;
 	let mut medium_point: f64= 0.;
@@ -258,3 +250,23 @@ fn auto_expose(cam: &Camera, pixels: &Vec<Color>) -> f64 {
 		1.
 	}
 }
+
+/*pub fn render(cam: &Camera, world: &HittableList, pixels: &mut Vec<Color>) {
+	println!("P3\n{} {}\n255", cam.image_width, cam.image_height);
+
+	for j in 0..cam.image_height {
+        eprint!("\r Progress: {:.1}% ", j as f32 / (cam.image_height - 1) as f32 * 100.);
+
+        for i in 0..cam.image_width {
+			let index = (j * cam.image_width + i) as usize;
+			for _sample in 0..cam.samples_per_pixel {
+				let r = get_ray(cam, i, j);
+				pixels[index] =
+				pixels[index] + ray_color(&r,  cam.max_depth, world, &vec![], cam);
+			}
+            write_color(&mut std::io::stdout(), &pixels[index], cam.samples_per_pixel as f64, None);
+        }
+    }
+
+	eprintln!("\rDone!                           ");
+}*/
