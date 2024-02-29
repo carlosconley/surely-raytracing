@@ -83,7 +83,7 @@ impl Camera {
 
 		let defocus_radius = focus_dist * (defocus_angle / 2.).to_radians().tan();
 
-		return Camera {
+		Camera {
 			aspect_ratio,
 			image_width,
 			image_height,
@@ -101,7 +101,7 @@ impl Camera {
 			defocus_disk_v: v * defocus_radius,
 			background,
 			auto_exposure: false,
-		};
+		}
 	}
 }
 
@@ -206,7 +206,7 @@ fn ray_color(r: &Ray, depth: i32, world: &dyn Hittable, suns: &Vec<Sun>, cam: &C
 		Some(rec) => {
 			match rec.mat.scatter(r, &rec) {
 				Some((attenuation, scattered)) => {
-					attenuation + ray_color(&scattered, depth - 1, world, suns, cam)
+					attenuation * ray_color(&scattered, depth - 1, world, suns, cam)
 				},
 				None => Color::new_zero()
 			}

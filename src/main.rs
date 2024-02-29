@@ -55,7 +55,7 @@ fn scene_sun_spheres() {
     ));
 
     world.objects.push(Sphere::new(
-        Point3::new(-1., 0., -1.),
+        Point3::new(-1., 0., -1.25),
         -0.4,
         left
     ));
