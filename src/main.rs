@@ -191,7 +191,7 @@ fn scene_random_balls() {
     world.objects.push(Sphere::new(Point3::new(-4., 1., 0.), 1.0, material2));
     world.objects.push(Sphere::new(Point3::new(4., 1., 0.), 1.0, material3));
     // Camera
-    let cam = Camera::new(16. / 9., 800, 400, 50, 20., Point3::new(13., 2., 3.), Point3::new(0., 0., 0.), Vec3::new(0., 1., 0.), 0.6, 10., Color::new(0.7, 0.8, 1.));
+    let cam = Camera::new(16. / 9., 400, 100, 50, 20., Point3::new(13., 2., 3.), Point3::new(0., 0., 0.), Vec3::new(0., 1., 0.), 0.6, 10., Color::new(0.7, 0.8, 1.));
 
 
     let mut pixels = init_pixels(&cam);
