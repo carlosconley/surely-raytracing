@@ -45,13 +45,14 @@ impl Lambertian {
 }
 
 impl MatFn for Lambertian {
-	fn scatter(&self, _r_in: &Ray, rec: &HitRecord) -> Option<(Color, Ray)> {
+	fn scatter(&self, r_in: &Ray, rec: &HitRecord) -> Option<(Color, Ray)> {
 		let scatter_direction = rec.normal + random_unit_vector();
+		// catch degenderate scatter direction
 		let scatter_direction = if scatter_direction.near_zero() { rec.normal } else { scatter_direction };
 
 		Some((
 			self.albedo,
-			Ray::new(rec.p, scatter_direction),
+			Ray::new_timed(rec.p, scatter_direction, r_in.time()),
 		))
 
 	}
@@ -74,7 +75,7 @@ impl Metal {
 impl MatFn for Metal {
 	fn scatter(&self, r_in: &Ray, rec: &HitRecord) -> Option<(Color, Ray)> {
 		let reflected = reflect(&unit_vector(&r_in.direction()),&rec.normal);
-		let scattered = Ray::new(rec.p, reflected + self.fuzz * random_unit_vector());
+		let scattered = Ray::new_timed(rec.p, reflected + self.fuzz * random_unit_vector(), r_in.time());
 		Some((self.albedo, scattered))
 	}
 }
@@ -115,6 +116,6 @@ impl MatFn for Dielectric {
 			refract(&unit_direction, &rec.normal, refraction_ratio)
 		};
 
-		Some((self.tint, Ray::new(rec.p, direction)))
+		Some((self.tint, Ray::new_timed(rec.p, direction, r_in.time())))
 	}
 }

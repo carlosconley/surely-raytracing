@@ -22,18 +22,32 @@ impl Hittable for Object {
 pub struct Sphere {
 	center: Point3,
 	radius: f64,
-	mat: Material
+	mat: Material,
+	center_vec: Option<Vec3>,
+
 }
 
 impl Sphere {
 	pub fn new(center: Point3, radius: f64, mat: Material) -> Object {
-		Object::Sphere(Sphere { center, radius, mat })
+		Object::Sphere(Sphere { center, radius, mat, center_vec: None })
+	}
+
+	pub fn new_moving(center1: Point3, center2: Point3, radius: f64, mat: Material,) -> Object {
+		Object::Sphere(Sphere { center: center1, radius, mat, center_vec: Some(center2 - center1) })
+	}
+
+	fn center(&self, time: f64) -> Point3 {
+		match self.center_vec {
+			Some(dir) => self.center + time * dir,
+			None => self.center
+		}
 	}
 }
 
 impl Hittable for Sphere {
 	fn hit(&self, r: &Ray, ray_t: &Interval) -> Option<HitRecord> {
-		let oc = r.origin() - self.center;
+		let center = self.center(r.time());
+		let oc = r.origin() - center;
 		let a = r.direction().length_squared();
 		let half_b = dot(&oc, &r.direction());
 		let c = oc.length_squared() - self.radius*self.radius;
@@ -60,7 +74,7 @@ impl Hittable for Sphere {
 			front_face: false
 		};
 
-		let outward_normal = (rec.p - self.center) / self.radius;
+		let outward_normal = (rec.p - center) / self.radius;
 
 
 		Some (

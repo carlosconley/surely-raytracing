@@ -18,7 +18,7 @@ use vec3::{Point3, Vec3, random_vec3, random_vec3_range};
 use color::Color;
 
 fn main() {
-    scene_sun_spheres();
+    scene_random_balls();
 }
 
 fn scene_sun_spheres() {
@@ -159,12 +159,15 @@ fn scene_random_balls() {
 
             let choose_mat = random_double();
             let center = Point3::new(a + 0.9 * random_double(), 0.2, b + 0.9 * random_double());
+            let center2 = center + Vec3::new(0., random_range(0., 0.5), 0.);
 
             if (center - Point3::new(4., 0.2, 0.)).length_squared() > (0.9 * 0.9) {
                 if choose_mat < 0.8 {
                     let albedo: Color = random_vec3() * random_vec3();
                     let sphere_material = Lambertian::new(albedo);
-                    world.objects.push(Sphere::new(center, 0.2, sphere_material));
+                    world.objects.push(Sphere::new_moving(center, center2, 0.2, sphere_material));
+
+                    // world.objects.push(Sphere::new(center, 0.2, sphere_material));
                 } else if choose_mat < 0.95 {
                     let albedo = random_vec3_range(0.5, 1.);
                     let fuzz = random_range(0., 0.5);
@@ -188,7 +191,7 @@ fn scene_random_balls() {
     world.objects.push(Sphere::new(Point3::new(-4., 1., 0.), 1.0, material2));
     world.objects.push(Sphere::new(Point3::new(4., 1., 0.), 1.0, material3));
     // Camera
-    let cam = Camera::new(16. / 9., 400, 200, 40, 20., Point3::new(13., 2., 3.), Point3::new(0., 0., 0.), Vec3::new(0., 1., 0.), 0.6, 10., Color::new(0.7, 0.8, 1.));
+    let cam = Camera::new(16. / 9., 800, 400, 50, 20., Point3::new(13., 2., 3.), Point3::new(0., 0., 0.), Vec3::new(0., 1., 0.), 0.6, 10., Color::new(0.7, 0.8, 1.));
 
 
     let mut pixels = init_pixels(&cam);

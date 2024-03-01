@@ -182,8 +182,9 @@ fn get_ray(cam: &Camera, i: i32, j: i32) -> Ray {
 	};
 
 	let ray_direction = pixel_sample - ray_origin;
+	let ray_time = random_double();
 
-	Ray::new(ray_origin, ray_direction)
+	Ray::new_timed(ray_origin, ray_direction, ray_time)
 }
 
 fn defocus_disk_sample(cam: &Camera) -> Point3 {
