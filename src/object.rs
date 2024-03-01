@@ -1,4 +1,4 @@
-use crate::interval::Interval;
+use crate::interval::{Interval, EMPTY};
 use crate::hittable::{Hittable, HitRecord};
 use crate::vec3::{self, dot, unit_vector, Point3, Vec3};
 use crate::color::Color;
@@ -143,4 +143,66 @@ impl Hittable for Plane {
 			None
 		}
 	}
+}
+
+pub struct Aabb {
+	x: Interval,
+	y: Interval,
+	z: Interval
+}
+
+impl Aabb {
+	pub fn empty() -> Aabb {
+		Aabb { x: EMPTY, y: EMPTY, z: EMPTY }
+	}
+
+	pub fn new(x: Interval, y: Interval, z: Interval) -> Aabb {
+		Aabb { x, y, z }
+	}
+
+	pub fn from_points(a: &Point3, b: &Point3) -> Aabb {
+		Aabb {
+			x: Interval { min: a.x().min(b.x()), max: a.x().max(b.x()) },
+			y: Interval { min: a.y().min(b.y()), max: a.y().max(b.y()) },
+			z: Interval { min: a.z().min(b.z()), max: a.z().max(b.z()) },
+		}
+	}
+
+	pub fn axis(&self, n: u8) -> &Interval {
+		match n {
+			0 => &self.x,
+			1 => &self.y,
+			2 => &self.z,
+			_ => panic!("Cannot acces the 4th or higher dimension!")
+		}
+
+	}
+
+	pub fn hit(&self, r: &Ray, mut ray_t: Interval) -> bool {
+		for a in 0..3 {
+			let inv_d = 1. / r.direction().dim(a);
+			let orig = r.origin().dim(a);
+
+			let t0 = (self.axis(a).min - orig) * inv_d;
+			let t1 = (self.axis(a).max - orig) * inv_d;
+
+			// swap if less than 0
+			let (t0, t1) = if inv_d < 0. {
+				(t1, t0)
+			} else {
+				(t0, t1)
+			};
+
+			if t0 > ray_t.min { ray_t.min = t0 }
+			if t1 < ray_t.max { ray_t.max = t1 }
+
+
+			if ray_t.max <= ray_t.min {
+				return false;
+			}
+		}
+
+		true
+	}
+
 }

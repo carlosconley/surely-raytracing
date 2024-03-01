@@ -43,6 +43,15 @@ impl Vec3 {
 	pub fn y(&self) -> f64 { self.y }
 	pub fn z(&self) -> f64 { self.z }
 
+	pub fn dim(&self, n: u8) -> f64 {
+		match n {
+			0 => self.x,
+			1 => self.y,
+			2 => self.z,
+			_ => panic!("Cannot access the 4th or higher dimension!")
+		}
+	}
+
 	pub fn length_squared(&self) -> f64 {
 		return self.x * self.x + self.y * self.y + self.z * self.z;
 	}

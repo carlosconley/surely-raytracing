@@ -1,6 +1,6 @@
 use crate::utils::INF;
 
-pub const _EMPTY: Interval = Interval {
+pub const EMPTY: Interval = Interval {
 	min: INF,
 	max: -INF
 };
@@ -33,5 +33,16 @@ impl Interval {
 			x
 		}
 	}
+
+	pub fn size(&self) -> f64 {
+		self.max - self.min
+	}
+
+	pub fn expand(&self, delta: f64) -> Interval {
+		let padding = delta / 2.;
+
+		Interval { min: self.min - padding, max: self.max + padding }
+	}
+
 }
 
