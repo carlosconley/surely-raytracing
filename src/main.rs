@@ -8,6 +8,8 @@ mod interval;
 mod utils;
 mod material;
 
+use std::sync::Arc;
+
 // type aliasing
 use material::{Lambertian, Metal, Dielectric};
 use object::{Sphere, Sun};
@@ -16,6 +18,8 @@ use render::{Camera, init_pixels};
 use utils::{random_double, random_range};
 use vec3::{Point3, Vec3, random_vec3, random_vec3_range};
 use color::Color;
+
+use crate::{hittable::BvhNode, object::Object};
 
 fn main() {
     scene_random_balls();
@@ -185,10 +189,14 @@ fn scene_random_balls() {
     world.add(Sphere::new(Point3::new(-4., 1., 0.), 1.0, material2));
     world.add(Sphere::new(Point3::new(4., 1., 0.), 1.0, material3));
     // Camera
-    let cam = Camera::new(16. / 9., 400, 100, 50, 20., Point3::new(13., 2., 3.), Point3::new(0., 0., 0.), Vec3::new(0., 1., 0.), 0.6, 10., Color::new(0.7, 0.8, 1.));
+
+    let cam = Camera::new(16. / 9., 500, 400, 50, 20., Point3::new(13., 2., 3.), Point3::new(0., 0., 0.), Vec3::new(0., 1., 0.), 0.6, 10., Color::new(0.7, 0.8, 1.));
 
 
     let mut pixels = init_pixels(&cam);
+
+    eprintln!("Building BVH!");
+    //let world = HittableList::from_object(Object::Node(Arc::new(BvhNode::from_list(&mut world))));
 
     crate::render::render_par(&cam, &world, &mut pixels, &vec![]);
 }

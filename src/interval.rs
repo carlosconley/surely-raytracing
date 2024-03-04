@@ -10,6 +10,7 @@ pub const _UNIVERSE: Interval = Interval {
 	max: INF
 };
 
+#[derive(Clone)]
 pub struct Interval {
 	pub min: f64,
 	pub max: f64,

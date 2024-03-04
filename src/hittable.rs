@@ -1,8 +1,12 @@
+use std::cmp::Ordering;
+use std::sync::Arc;
+
 use crate::material::Material;
 use crate::object::{ Object, Aabb };
 use crate::ray::Ray;
 use crate::interval::Interval;
 use crate::vec3::{Point3, Vec3, dot};
+use crate::utils::random_int;
 
 
 pub struct HitRecord<'material> {
@@ -46,6 +50,12 @@ impl HittableList {
 		}
 	}
 
+	pub fn from_object(obj: Object) -> HittableList {
+		let mut list = Self::new();
+		list.add(obj);
+		list
+	}
+
 	pub fn add(&mut self, object: Object) {
 		self.bbox = Aabb::from_boxes(&self.bbox, object.bounding_box());
 		self.objects.push(object);
@@ -80,19 +90,73 @@ impl Hittable for HittableList {
 // In the book left and right are shared pointers,
 // but slows runtime while saving memory
 // I'm going to keep runtime performance at the cost of memory
-pub struct BvhNode {
+pub struct BvhNode  {
 	left: Object,
 	right: Object,
 	bbox: Aabb
 }
 
 impl BvhNode {
-	pub fn from_list(list: &HittableList) -> BvhNode {
-		BvhNode::new(&list.objects, 0, list.objects.len())
+	pub fn from_list(list: &mut HittableList) -> BvhNode {
+		let len = list.objects.len();
+		BvhNode::new(&mut list.objects, 0, len)
 	}
 
-	pub fn new(src_objects: &Vec<Object>, start: usize, end: usize) -> BvhNode {
-		todo!()
+	pub fn new(src_objects: &mut Vec<Object>, start: usize, end: usize) -> BvhNode {
+		let objects = src_objects;
+
+		let axis = random_int(0, 2);
+		let comparator = if axis == 0 {
+			Self::box_x_compare
+		} else if axis == 1 {
+			Self::box_y_compare
+		} else {
+			Self::box_z_compare
+		};
+
+		let object_span = end - start;
+
+		let (left, right) = if object_span == 1 {
+			(objects[start].clone(), objects[start].clone())
+		} else if object_span == 2 {
+			match comparator(&objects[start], &objects[start + 1]) {
+				Ordering::Greater => (objects[start + 1].clone(), objects[start].clone()),
+				_ => (objects[start].clone(), objects[start + 1].clone()),
+			}
+		} else {
+			objects[start..end].sort_by(comparator);
+
+			let mid = start + object_span / 2;
+
+			(
+				Object::Node(Arc::new(BvhNode::new(objects, start, mid))),
+				Object::Node(Arc::new(BvhNode::new(objects, mid, end)))
+			)
+
+		};
+
+		BvhNode {
+			bbox: Aabb::from_boxes(left.bounding_box(), right.bounding_box()),
+			left,
+			right,
+		}
+
+	}
+
+	fn box_compare(a: &Object, b: &Object, axis: u8) -> Ordering {
+		a.bounding_box().axis(axis).min.total_cmp(&b.bounding_box().axis(axis).min)
+	}
+
+	fn box_x_compare(a: &Object, b: &Object) -> Ordering {
+		Self::box_compare(a, b, 0)
+	}
+
+	fn box_y_compare(a: &Object, b: &Object) -> Ordering {
+		Self::box_compare(a, b, 1)
+	}
+
+	fn box_z_compare(a: &Object, b: &Object) -> Ordering {
+		Self::box_compare(a, b, 2)
 	}
 }
 

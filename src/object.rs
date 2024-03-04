@@ -1,20 +1,28 @@
+use std::sync::Arc;
+
 use crate::interval::{Interval, EMPTY};
-use crate::hittable::{Hittable, HitRecord};
+use crate::hittable::{Hittable, HitRecord, HittableList, BvhNode};
 use crate::vec3::{dot, unit_vector, Point3, Vec3};
 use crate::color::Color;
-use crate::ray::Ray;
+use crate::ray::{self, Ray};
 use crate::material::Material;
 
 
+// Using Arc's for now, but figure out more efficient way to do it later
+#[derive(Clone)]
 pub enum Object {
 	Sphere(Sphere),
+	List(Arc<HittableList>),
+	Node(Arc<BvhNode>),
 	//Plane(Plane)
 }
 
 impl Hittable for Object {
 	fn hit(&self, r: &Ray, ray_t: &Interval) -> Option<HitRecord> {
 		match self {
-			Object::Sphere(s) => s.hit(r, ray_t),
+			Object::Sphere(o) => o.hit(r, ray_t),
+			Object::List(o) => o.hit(r, ray_t),
+			Object::Node(o) => o.hit(r, ray_t),
 			//Object::Plane(p) => p.hit(r, ray_t)
 		}
 	}
@@ -22,10 +30,14 @@ impl Hittable for Object {
 	fn bounding_box(&self) -> &Aabb {
 		match self {
 			//Object::Plane(p) => p.bounding_box(),
-			Object::Sphere(s) => s.bounding_box(),
+			Object::Sphere(o) => o.bounding_box(),
+			Object::List(o) => o.bounding_box(),
+			Object::Node(o) => o.bounding_box(),
 		}
 	}
 }
+
+#[derive(Clone)]
 pub struct Sphere {
 	center: Point3,
 	radius: f64,
@@ -162,6 +174,7 @@ impl Hittable for Plane {
 	}
 }*/
 
+#[derive(Clone)]
 pub struct Aabb {
 	x: Interval,
 	y: Interval,
