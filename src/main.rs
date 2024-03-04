@@ -10,7 +10,7 @@ mod material;
 
 // type aliasing
 use material::{Lambertian, Metal, Dielectric};
-use object::{Sphere, Sun, Plane};
+use object::{Sphere, Sun};
 use hittable::HittableList;
 use render::{Camera, init_pixels};
 use utils::{random_double, random_range};
@@ -22,9 +22,7 @@ fn main() {
 }
 
 fn scene_sun_spheres() {
-    let mut world = HittableList {
-        objects: vec![]
-    };
+    let mut world = HittableList::new();
 
     let ground = Lambertian::new(Color::new(0.8, 0.8, 0.0));
 
@@ -46,27 +44,27 @@ fn scene_sun_spheres() {
         center
     );
 
-    world.objects.push(center_sphere);
+    world.add(center_sphere);
 
-    world.objects.push(Sphere::new(
+    world.add(Sphere::new(
         Point3::new(-1., 0., -1.25),
         0.5,
         left.clone()
     ));
 
-    world.objects.push(Sphere::new(
+    world.add(Sphere::new(
         Point3::new(-1., 0., -1.25),
         -0.4,
         left
     ));
 
-    world.objects.push(Plane::new(
+    world.add(Sphere::new(
         Point3::new(0., -0.5, 0.),
-        Vec3::new(0., 1., 0.),
+        1000.,
         ground
     ));
 
-    world.objects.push(Sphere::new(
+    world.add(Sphere::new(
         Point3::new(1., 0., -0.75),
         0.5,
         right
@@ -87,9 +85,7 @@ fn scene_sun_spheres() {
 }
 
 fn scene_three_spheres() {
-    let mut world = HittableList {
-        objects: vec![]
-    };
+    let mut world = HittableList::new();
 
     let ground = Lambertian::new(Color::new(0.8, 0.8, 0.0));
 
@@ -111,27 +107,27 @@ fn scene_three_spheres() {
         center
     );
 
-    world.objects.push(center_sphere);
+    world.add(center_sphere);
 
-    world.objects.push(Sphere::new(
+    world.add(Sphere::new(
         Point3::new(-1., 0., -1.),
         0.5,
         left.clone()
     ));
 
-    world.objects.push(Sphere::new(
+    world.add(Sphere::new(
         Point3::new(-1., 0., -1.),
         -0.4,
         left
     ));
 
-    world.objects.push(Sphere::new(
+    world.add(Sphere::new(
         Point3::new(0., -100.5, -1.),
         100.,
         ground
     ));
 
-    world.objects.push(Sphere::new(
+    world.add(Sphere::new(
         Point3::new(1., 0., -1.),
         0.5,
         right
@@ -145,12 +141,10 @@ fn scene_three_spheres() {
 }
 
 fn scene_random_balls() {
-    let mut world = HittableList {
-        objects: vec![]
-    };
+    let mut world = HittableList::new();
 
     let ground_material = Lambertian::new(Color::new(0.5, 0.5, 0.5));
-    world.objects.push(Sphere::new(Point3::new(0., -2000., 0.), 2000., ground_material));
+    world.add(Sphere::new(Point3::new(0., -2000., 0.), 2000., ground_material));
 
     for a in -11..11 {
         for b in -11..11 {
@@ -165,18 +159,18 @@ fn scene_random_balls() {
                 if choose_mat < 0.8 {
                     let albedo: Color = random_vec3() * random_vec3();
                     let sphere_material = Lambertian::new(albedo);
-                    world.objects.push(Sphere::new_moving(center, center2, 0.2, sphere_material));
+                    world.add(Sphere::new_moving(center, center2, 0.2, sphere_material));
 
-                    // world.objects.push(Sphere::new(center, 0.2, sphere_material));
+                    // world.add(Sphere::new(center, 0.2, sphere_material));
                 } else if choose_mat < 0.95 {
                     let albedo = random_vec3_range(0.5, 1.);
                     let fuzz = random_range(0., 0.5);
                     let sphere_material = Metal::new(albedo, fuzz);
-                    world.objects.push(Sphere::new(center, 0.2, sphere_material));
+                    world.add(Sphere::new(center, 0.2, sphere_material));
                 } else {
                     let ir = random_range(1.2, 1.6);
                     let sphere_material = Dielectric::new(ir, Color::new(1., 1., 1.));
-                    world.objects.push(Sphere::new(center, 0.2, sphere_material));
+                    world.add(Sphere::new(center, 0.2, sphere_material));
                 }
             }
 
@@ -187,9 +181,9 @@ fn scene_random_balls() {
     let material2 = Lambertian::new(Color::new(0.4, 0.2, 0.1));
     let material3 = Metal::new(Color::new(0.7, 0.6, 0.5), 0.0);
 
-    world.objects.push(Sphere::new(Point3::new(0., 1., 0.), 1.0, material1));
-    world.objects.push(Sphere::new(Point3::new(-4., 1., 0.), 1.0, material2));
-    world.objects.push(Sphere::new(Point3::new(4., 1., 0.), 1.0, material3));
+    world.add(Sphere::new(Point3::new(0., 1., 0.), 1.0, material1));
+    world.add(Sphere::new(Point3::new(-4., 1., 0.), 1.0, material2));
+    world.add(Sphere::new(Point3::new(4., 1., 0.), 1.0, material3));
     // Camera
     let cam = Camera::new(16. / 9., 400, 100, 50, 20., Point3::new(13., 2., 3.), Point3::new(0., 0., 0.), Vec3::new(0., 1., 0.), 0.6, 10., Color::new(0.7, 0.8, 1.));
 

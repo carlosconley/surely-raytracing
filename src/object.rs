@@ -1,6 +1,6 @@
 use crate::interval::{Interval, EMPTY};
 use crate::hittable::{Hittable, HitRecord};
-use crate::vec3::{self, dot, unit_vector, Point3, Vec3};
+use crate::vec3::{dot, unit_vector, Point3, Vec3};
 use crate::color::Color;
 use crate::ray::Ray;
 use crate::material::Material;
@@ -8,14 +8,21 @@ use crate::material::Material;
 
 pub enum Object {
 	Sphere(Sphere),
-	Plane(Plane)
+	//Plane(Plane)
 }
 
 impl Hittable for Object {
 	fn hit(&self, r: &Ray, ray_t: &Interval) -> Option<HitRecord> {
 		match self {
 			Object::Sphere(s) => s.hit(r, ray_t),
-			Object::Plane(p) => p.hit(r, ray_t)
+			//Object::Plane(p) => p.hit(r, ray_t)
+		}
+	}
+
+	fn bounding_box(&self) -> &Aabb {
+		match self {
+			//Object::Plane(p) => p.bounding_box(),
+			Object::Sphere(s) => s.bounding_box(),
 		}
 	}
 }
@@ -24,17 +31,23 @@ pub struct Sphere {
 	radius: f64,
 	mat: Material,
 	center_vec: Option<Vec3>,
+	bbox: Aabb,
 
 }
 
 impl Sphere {
 	pub fn new(center: Point3, radius: f64, mat: Material) -> Object {
-		Object::Sphere(Sphere { center, radius, mat, center_vec: None })
+		let rvec = Vec3::new(radius, radius, radius);
+		Object::Sphere(Sphere { center, radius, mat, center_vec: None, bbox: Aabb::from_points(&(center - rvec), &(center - rvec)) })
 	}
 
 	pub fn new_moving(center1: Point3, center2: Point3, radius: f64, mat: Material,) -> Object {
-		Object::Sphere(Sphere { center: center1, radius, mat, center_vec: Some(center2 - center1) })
+		let rvec = Vec3::new(radius, radius, radius);
+		let box1 = Aabb::from_points(&(center1 - rvec), &(center1 + rvec));
+		let box2 = Aabb::from_points(&(center2 - rvec), &(center2 + rvec));
+		Object::Sphere(Sphere { center: center1, radius, mat, center_vec: Some(center2 - center1), bbox: Aabb::from_boxes(&box1, &box2)})
 	}
+
 
 	fn center(&self, time: f64) -> Point3 {
 		match self.center_vec {
@@ -81,6 +94,10 @@ impl Hittable for Sphere {
 			rec.set_face_normal(r, &outward_normal)
 		)
 	}
+
+	fn bounding_box(&self) -> &Aabb {
+		&self.bbox
+	}
 }
 
 // A disk light source infinitely far away
@@ -108,7 +125,7 @@ impl Sun {
 
 }
 
-pub struct Plane {
+/*pub struct Plane {
 	point: Point3,
 	normal: Vec3,
 	mat: Material,
@@ -143,7 +160,7 @@ impl Hittable for Plane {
 			None
 		}
 	}
-}
+}*/
 
 pub struct Aabb {
 	x: Interval,
@@ -158,6 +175,15 @@ impl Aabb {
 
 	pub fn new(x: Interval, y: Interval, z: Interval) -> Aabb {
 		Aabb { x, y, z }
+	}
+
+	pub fn from_boxes(box0: &Aabb, box1: &Aabb) -> Aabb {
+		Aabb {
+			x: Interval::from_intervals(&box0.x, &box1.x),
+			y: Interval::from_intervals(&box0.y, &box1.y),
+			z: Interval::from_intervals(&box0.z, &box1.z),
+		}
+
 	}
 
 	pub fn from_points(a: &Point3, b: &Point3) -> Aabb {
@@ -178,7 +204,13 @@ impl Aabb {
 
 	}
 
-	pub fn hit(&self, r: &Ray, mut ray_t: Interval) -> bool {
+	pub fn hit(&self, r: &Ray, ray_t: &Interval) -> bool {
+		// Override and create copy to get around mutability rules
+		let mut ray_t = Interval {
+			min: ray_t.min,
+			max: ray_t.max,
+		};
+
 		for a in 0..3 {
 			let inv_d = 1. / r.direction().dim(a);
 			let orig = r.origin().dim(a);

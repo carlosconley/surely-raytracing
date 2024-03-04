@@ -44,5 +44,12 @@ impl Interval {
 		Interval { min: self.min - padding, max: self.max + padding }
 	}
 
+	pub fn from_intervals(a: &Interval, b: &Interval) -> Interval {
+		Interval {
+			min: a.min.min(b.min),
+			max: a.max.max(b.max)
+		}
+	}
+
 }
 
