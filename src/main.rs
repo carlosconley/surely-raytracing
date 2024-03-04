@@ -8,7 +8,6 @@ mod interval;
 mod utils;
 mod material;
 
-use std::sync::Arc;
 
 // type aliasing
 use material::{Lambertian, Metal, Dielectric};
@@ -19,7 +18,6 @@ use utils::{random_double, random_range};
 use vec3::{Point3, Vec3, random_vec3, random_vec3_range};
 use color::Color;
 
-use crate::{hittable::BvhNode, object::Object};
 
 fn main() {
     scene_random_balls();
@@ -63,8 +61,8 @@ fn scene_sun_spheres() {
     ));
 
     world.add(Sphere::new(
-        Point3::new(0., -0.5, 0.),
-        1000.,
+        Point3::new(0., -100.5, -1.),
+        100.,
         ground
     ));
 
@@ -81,6 +79,10 @@ fn scene_sun_spheres() {
     cam.auto_exposure = true;
 
     let mut pixels = init_pixels(&cam);
+
+//    eprintln!("Building BHV");
+
+    //let world = world.create_bvh();
 
     // this takes about 1.5 minutes on my m2 with 8 cores
     // make sun super bright so that we accentuate shadows, showing off our nifty sun simulation!
@@ -141,6 +143,8 @@ fn scene_three_spheres() {
 
     let mut pixels = init_pixels(&cam);
 
+    let world = world.create_bvh();
+
     crate::render::render_par(&cam, &world, &mut pixels, &vec![]);
 }
 
@@ -195,8 +199,7 @@ fn scene_random_balls() {
 
     let mut pixels = init_pixels(&cam);
 
-    eprintln!("Building BVH!");
-    let world = HittableList::from_object(Object::Node(Arc::new(BvhNode::from_list(&mut world))));
+    let world = world.create_bvh();
 
     crate::render::render_par(&cam, &world, &mut pixels, &vec![]);
 }

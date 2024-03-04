@@ -60,6 +60,10 @@ impl HittableList {
 		self.bbox = Aabb::from_boxes(&self.bbox, object.bounding_box());
 		self.objects.push(object);
 	}
+
+	pub fn create_bvh(&mut self) -> HittableList {
+		HittableList::from_object(Object::Node(Arc::new(BvhNode::from_list(self))))
+	}
 }
 
 impl Hittable for HittableList {
