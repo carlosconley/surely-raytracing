@@ -50,7 +50,7 @@ pub struct Sphere {
 impl Sphere {
 	pub fn new(center: Point3, radius: f64, mat: Material) -> Object {
 		let rvec = Vec3::new(radius, radius, radius);
-		Object::Sphere(Sphere { center, radius, mat, center_vec: None, bbox: Aabb::from_points(&(center - rvec), &(center - rvec)) })
+		Object::Sphere(Sphere { center, radius, mat, center_vec: None, bbox: Aabb::from_points(&(center - rvec), &(center + rvec)) })
 	}
 
 	pub fn new_moving(center1: Point3, center2: Point3, radius: f64, mat: Material,) -> Object {

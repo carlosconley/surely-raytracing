@@ -120,8 +120,8 @@ impl BvhNode {
 			(objects[start].clone(), objects[start].clone())
 		} else if object_span == 2 {
 			match comparator(&objects[start], &objects[start + 1]) {
-				Ordering::Greater => (objects[start + 1].clone(), objects[start].clone()),
-				_ => (objects[start].clone(), objects[start + 1].clone()),
+				Ordering::Less => (objects[start].clone(), objects[start + 1].clone()),
+				_ => (objects[start + 1].clone(), objects[start].clone()),
 			}
 		} else {
 			objects[start..end].sort_by(comparator);

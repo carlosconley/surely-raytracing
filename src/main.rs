@@ -196,7 +196,7 @@ fn scene_random_balls() {
     let mut pixels = init_pixels(&cam);
 
     eprintln!("Building BVH!");
-    //let world = HittableList::from_object(Object::Node(Arc::new(BvhNode::from_list(&mut world))));
+    let world = HittableList::from_object(Object::Node(Arc::new(BvhNode::from_list(&mut world))));
 
     crate::render::render_par(&cam, &world, &mut pixels, &vec![]);
 }
