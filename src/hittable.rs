@@ -34,7 +34,7 @@ pub trait Hittable {
 	fn hit(&self, r: &Ray, ray_t: &Interval) -> Option<HitRecord>;
 
 	// consider returning &Aabb if we aren't modifying it
-	fn bounding_box(&self) -> &Aabb;
+	fn bounding_box(&self) -> Option<&Aabb>;
 }
 
 pub struct HittableList {
@@ -57,7 +57,11 @@ impl HittableList {
 	}
 
 	pub fn add(&mut self, object: Object) {
-		self.bbox = Aabb::from_boxes(&self.bbox, object.bounding_box());
+		match object.bounding_box() {
+			Some(bbox) => self.bbox = Aabb::from_boxes(&self.bbox, bbox),
+			None => ()
+
+		};
 		self.objects.push(object);
 	}
 
@@ -85,8 +89,8 @@ impl Hittable for HittableList {
 
 	}
 
-	fn bounding_box(&self) -> &Aabb {
-		&self.bbox
+	fn bounding_box(&self) -> Option<&Aabb> {
+		Some(&self.bbox)
 	}
 
 }
@@ -140,7 +144,10 @@ impl BvhNode {
 		};
 
 		BvhNode {
-			bbox: Aabb::from_boxes(left.bounding_box(), right.bounding_box()),
+			bbox: Aabb::from_boxes(
+				left.bounding_box().expect("No left bounding box"),
+				right.bounding_box().expect("No right bounding box")
+			),
 			left,
 			right,
 		}
@@ -148,7 +155,7 @@ impl BvhNode {
 	}
 
 	fn box_compare(a: &Object, b: &Object, axis: u8) -> Ordering {
-		a.bounding_box().axis(axis).min.total_cmp(&b.bounding_box().axis(axis).min)
+		a.bounding_box().expect("No bounding box for object a").axis(axis).min.total_cmp(&b.bounding_box().expect("No bounding box for object b").axis(axis).min)
 	}
 
 	fn box_x_compare(a: &Object, b: &Object) -> Ordering {
@@ -183,7 +190,7 @@ impl Hittable for BvhNode {
 
 	}
 
-	fn bounding_box(&self) -> &Aabb {
-		&self.bbox
+	fn bounding_box(&self) -> Option<&Aabb> {
+		Some(&self.bbox)
 	}
 }

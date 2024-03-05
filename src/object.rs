@@ -14,7 +14,7 @@ pub enum Object {
 	Sphere(Sphere),
 	List(Arc<HittableList>),
 	Node(Arc<BvhNode>),
-	//Plane(Plane)
+	Plane(Plane)
 }
 
 impl Hittable for Object {
@@ -23,16 +23,17 @@ impl Hittable for Object {
 			Object::Sphere(o) => o.hit(r, ray_t),
 			Object::List(o) => o.hit(r, ray_t),
 			Object::Node(o) => o.hit(r, ray_t),
-			//Object::Plane(p) => p.hit(r, ray_t)
+			Object::Plane(p) => p.hit(r, ray_t)
 		}
 	}
 
-	fn bounding_box(&self) -> &Aabb {
+	fn bounding_box(&self) -> Option<&Aabb> {
 		match self {
 			//Object::Plane(p) => p.bounding_box(),
 			Object::Sphere(o) => o.bounding_box(),
 			Object::List(o) => o.bounding_box(),
 			Object::Node(o) => o.bounding_box(),
+			Object::Plane(o) => o.bounding_box()
 		}
 	}
 }
@@ -107,8 +108,8 @@ impl Hittable for Sphere {
 		)
 	}
 
-	fn bounding_box(&self) -> &Aabb {
-		&self.bbox
+	fn bounding_box(&self) -> Option<&Aabb> {
+		Some(&self.bbox)
 	}
 }
 
@@ -137,7 +138,9 @@ impl Sun {
 
 }
 
-/*pub struct Plane {
+
+#[derive(Clone)]
+pub struct Plane {
 	point: Point3,
 	normal: Vec3,
 	mat: Material,
@@ -172,7 +175,11 @@ impl Hittable for Plane {
 			None
 		}
 	}
-}*/
+
+	fn bounding_box(&self) -> Option<&Aabb> {
+		None
+	}
+}
 
 #[derive(Clone)]
 pub struct Aabb {
