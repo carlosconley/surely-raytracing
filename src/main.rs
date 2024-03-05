@@ -10,11 +10,13 @@ mod material;
 mod texture;
 
 
+use std::sync::Arc;
+
 // type aliasing
 use material::{Lambertian, Metal, Dielectric};
 use object::{Sphere, Sun};
 use hittable::HittableList;
-use render::{Camera, init_pixels};
+use render::{init_pixels, render_par, Camera};
 use texture::CheckerTexture;
 use utils::{random_double, random_range};
 use vec3::{Point3, Vec3, random_vec3, random_vec3_range};
@@ -22,7 +24,14 @@ use color::Color;
 
 
 fn main() {
-    scene_random_balls();
+    let scene = 1;
+    match scene {
+        -1 => scene_three_spheres(),
+        -2 => scene_sun_spheres(),
+        1 => scene_random_balls(),
+        2 => two_spheres(),
+        _ => (),
+    }
 }
 
 fn scene_sun_spheres() {
@@ -154,7 +163,7 @@ fn scene_random_balls() {
     let mut world = HittableList::new();
 
 
-    let checker = CheckerTexture::from_color(0.32, Color::new(0.2, 0.3, 0.1), Color::new(0.9, 0.9, 0.9));
+    let checker = Arc::new(CheckerTexture::from_color(0.32, Color::new(0.2, 0.3, 0.1), Color::new(0.9, 0.9, 0.9)));
 
     let ground_material = Lambertian::from_texture(checker);
 
@@ -200,7 +209,7 @@ fn scene_random_balls() {
     world.add(Sphere::new(Point3::new(4., 1., 0.), 1.0, material3));
     // Camera
 
-    let cam = Camera::new(16. / 9., 400, 100, 50, 20., Point3::new(13., 2., 3.), Point3::new(0., 0., 0.), Vec3::new(0., 1., 0.), 0.6, 10., Color::new(0.7, 0.8, 1.));
+    let cam = Camera::new(16. / 9., 500, 400, 50, 20., Point3::new(13., 2., 3.), Point3::new(0., 0., 0.), Vec3::new(0., 1., 0.), 0.6, 10., Color::new(0.7, 0.8, 1.));
 
 
     let mut pixels = init_pixels(&cam);
@@ -208,4 +217,20 @@ fn scene_random_balls() {
     let world = world.create_bvh();
 
     crate::render::render_par(&cam, &world, &mut pixels, &vec![]);
+}
+
+fn two_spheres() {
+    let mut world = HittableList::new();
+
+    let checker = Arc::new(CheckerTexture::from_color(0.3, Color::new(0.2, 0.3, 0.1), Color::new(0.9, 0.9, 0.9)));
+
+    world.add(Sphere::new(Point3::new(0., -10., 0.), 10., Lambertian::from_texture(checker.clone())));
+
+    world.add(Sphere::new(Point3::new(0., 10., 0.), 10., Lambertian::from_texture(checker)));
+
+    let cam = Camera::new(16. / 9., 400, 100, 50, 20., Point3::new(13., 2., 3.), Point3::new(0., 0., 0.), Vec3::new(0., 1., 0.), 0., 0., Color::new(0.7, 0.8, 1.));
+
+    let mut pixels = init_pixels(&cam);
+
+    render_par(&cam, &world, &mut pixels, &vec![]);
 }

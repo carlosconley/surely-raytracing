@@ -1,4 +1,6 @@
 
+use std::sync::Arc;
+
 use crate::{color::Color,
 	hittable::HitRecord,
 	ray::Ray,
@@ -35,16 +37,16 @@ pub trait MatFn {
 
 #[derive(Clone)]
 pub struct Lambertian {
-	texture: Texture,
+	texture: Arc<Texture>,
 }
 
 
 impl Lambertian {
 	pub fn new(albedo: Color) -> Material {
-		Material::Lambertian(Lambertian { texture: SolidColor::new( albedo ) })
+		Material::Lambertian(Lambertian { texture: Arc::new(SolidColor::new( albedo )) })
 	}
 
-	pub fn from_texture(texture: Texture) -> Material {
+	pub fn from_texture(texture: Arc<Texture>) -> Material {
 		Material::Lambertian(
 			Lambertian {
 				texture

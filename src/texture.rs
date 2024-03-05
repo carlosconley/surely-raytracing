@@ -1,3 +1,5 @@
+use std::sync::Arc;
+
 use crate::{color::Color, vec3::Point3};
 
 #[derive(Clone)]
@@ -43,14 +45,14 @@ impl SolidColor {
 #[derive(Clone)]
 pub struct CheckerTexture {
 	inv_scale: f64,
-	even: Box<Texture>,
-	odd: Box<Texture>
+	even: Arc<Texture>,
+	odd: Arc<Texture>
 }
 
 impl CheckerTexture {
-	pub fn new(scale: f64, even: Box<Texture>, odd: Box<Texture>) -> Texture {
+	pub fn new(scale: f64, even: Arc<Texture>, odd: Arc<Texture>) -> Texture {
 		Texture::Checker(
-			CheckerTexture { inv_scale: 1.0 / scale, even, odd }
+			CheckerTexture { inv_scale: 1. / scale, even, odd }
 		)
 	}
 
@@ -58,8 +60,8 @@ impl CheckerTexture {
 		Texture::Checker(
 			CheckerTexture {
 				inv_scale: 1. / scale,
-				even: Box::new(SolidColor::new(c1)),
-				odd: Box::new(SolidColor::new(c2)),
+				even: Arc::new(SolidColor::new(c1)),
+				odd: Arc::new(SolidColor::new(c2)),
 			}
 		)
 	}

@@ -1,10 +1,11 @@
+use std::f64::consts::PI;
 use std::sync::Arc;
 
 use crate::interval::{Interval, EMPTY};
 use crate::hittable::{Hittable, HitRecord, HittableList, BvhNode};
 use crate::vec3::{dot, unit_vector, Point3, Vec3};
 use crate::color::Color;
-use crate::ray::{self, Ray};
+use crate::ray::Ray;
 use crate::material::Material;
 
 
@@ -12,7 +13,7 @@ use crate::material::Material;
 #[derive(Clone)]
 pub enum Object {
 	Sphere(Sphere),
-	List(Arc<HittableList>),
+	//List(Arc<HittableList>),
 	Node(Arc<BvhNode>),
 	Plane(Plane)
 }
@@ -21,7 +22,7 @@ impl Hittable for Object {
 	fn hit(&self, r: &Ray, ray_t: &Interval) -> Option<HitRecord> {
 		match self {
 			Object::Sphere(o) => o.hit(r, ray_t),
-			Object::List(o) => o.hit(r, ray_t),
+			//Object::List(o) => o.hit(r, ray_t),
 			Object::Node(o) => o.hit(r, ray_t),
 			Object::Plane(p) => p.hit(r, ray_t)
 		}
@@ -29,9 +30,8 @@ impl Hittable for Object {
 
 	fn bounding_box(&self) -> Option<&Aabb> {
 		match self {
-			//Object::Plane(p) => p.bounding_box(),
 			Object::Sphere(o) => o.bounding_box(),
-			Object::List(o) => o.bounding_box(),
+			//Object::List(o) => o.bounding_box(),
 			Object::Node(o) => o.bounding_box(),
 			Object::Plane(o) => o.bounding_box()
 		}
@@ -68,6 +68,14 @@ impl Sphere {
 			None => self.center
 		}
 	}
+
+	fn get_sphere_uv(&self, p: &Point3) -> (f64, f64) {
+		let theta = (-p.y()).acos();
+		let phi = (-p.z()).atan2(p.x()) + PI;
+
+		(phi / (2. * phi), theta / PI)
+
+	}
 }
 
 impl Hittable for Sphere {
@@ -92,17 +100,20 @@ impl Hittable for Sphere {
 			}
 		}
 
+		let p = r.at(root);
+		let outward_normal = (p - center) / self.radius;
+		let (u, v) = self.get_sphere_uv(&outward_normal);
+
 		let rec = HitRecord {
 			t: root,
-			p: r.at(root),
+			p,
 			mat: &self.mat,
-			u: 0.,
-			v: 0.,
+			u,
+			v,
 			normal: Point3::new_zero(),
 			front_face: false
 		};
 
-		let outward_normal = (rec.p - center) / self.radius;
 
 
 		Some (
