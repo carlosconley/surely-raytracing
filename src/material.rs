@@ -3,7 +3,8 @@ use crate::{color::Color,
 	hittable::HitRecord,
 	ray::Ray,
 	vec3::{random_unit_vector, reflect, unit_vector, refract, dot},
-	utils::random_double
+	utils::random_double,
+	texture::{ Texture, SolidColor },
 };
 
 #[derive(Clone)]
@@ -34,13 +35,21 @@ pub trait MatFn {
 
 #[derive(Clone)]
 pub struct Lambertian {
-	albedo: Color,
+	texture: Texture,
 }
 
 
 impl Lambertian {
 	pub fn new(albedo: Color) -> Material {
-		Material::Lambertian(Lambertian { albedo })
+		Material::Lambertian(Lambertian { texture: SolidColor::new( albedo ) })
+	}
+
+	pub fn from_texture(texture: Texture) -> Material {
+		Material::Lambertian(
+			Lambertian {
+				texture
+			}
+		)
 	}
 }
 
@@ -51,7 +60,7 @@ impl MatFn for Lambertian {
 		let scatter_direction = if scatter_direction.near_zero() { rec.normal } else { scatter_direction };
 
 		Some((
-			self.albedo,
+			self.texture.value(rec.u, rec.v, &rec.p),
 			Ray::new_timed(rec.p, scatter_direction, r_in.time()),
 		))
 

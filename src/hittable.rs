@@ -14,6 +14,8 @@ pub struct HitRecord<'material> {
 	pub normal: Vec3, // normal at hit
 	pub mat: &'material Material,
 	pub t: f64, // ray length
+	pub u: f64,
+	pub v: f64,
 	pub front_face: bool,
 }
 
@@ -25,6 +27,8 @@ impl HitRecord<'_> {
 			mat: self.mat,
 			front_face,
 			t: self.t,
+			u: self.u,
+			v: self.v,
 			normal: if front_face { *outward_normal } else { -*outward_normal }
 		}
 	}

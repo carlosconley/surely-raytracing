@@ -7,6 +7,7 @@ mod render;
 mod interval;
 mod utils;
 mod material;
+mod texture;
 
 
 // type aliasing
@@ -14,6 +15,7 @@ use material::{Lambertian, Metal, Dielectric};
 use object::{Sphere, Sun};
 use hittable::HittableList;
 use render::{Camera, init_pixels};
+use texture::CheckerTexture;
 use utils::{random_double, random_range};
 use vec3::{Point3, Vec3, random_vec3, random_vec3_range};
 use color::Color;
@@ -151,7 +153,11 @@ fn scene_three_spheres() {
 fn scene_random_balls() {
     let mut world = HittableList::new();
 
-    let ground_material = Lambertian::new(Color::new(0.5, 0.5, 0.5));
+
+    let checker = CheckerTexture::from_color(0.32, Color::new(0.2, 0.3, 0.1), Color::new(0.9, 0.9, 0.9));
+
+    let ground_material = Lambertian::from_texture(checker);
+
     world.add(Sphere::new(Point3::new(0., -2000., 0.), 2000., ground_material));
 
     for a in -11..11 {
@@ -194,7 +200,7 @@ fn scene_random_balls() {
     world.add(Sphere::new(Point3::new(4., 1., 0.), 1.0, material3));
     // Camera
 
-    let cam = Camera::new(16. / 9., 500, 400, 50, 20., Point3::new(13., 2., 3.), Point3::new(0., 0., 0.), Vec3::new(0., 1., 0.), 0.6, 10., Color::new(0.7, 0.8, 1.));
+    let cam = Camera::new(16. / 9., 400, 100, 50, 20., Point3::new(13., 2., 3.), Point3::new(0., 0., 0.), Vec3::new(0., 1., 0.), 0.6, 10., Color::new(0.7, 0.8, 1.));
 
 
     let mut pixels = init_pixels(&cam);

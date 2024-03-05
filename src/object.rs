@@ -96,6 +96,8 @@ impl Hittable for Sphere {
 			t: root,
 			p: r.at(root),
 			mat: &self.mat,
+			u: 0.,
+			v: 0.,
 			normal: Point3::new_zero(),
 			front_face: false
 		};
@@ -163,6 +165,8 @@ impl Hittable for Plane {
 			t,
 			p: r.at(t),
 			mat: &self.mat,
+			u: 0.,
+			v: 0.,
 			normal: self.normal,
 			front_face: false
 			};
