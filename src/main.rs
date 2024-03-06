@@ -234,7 +234,8 @@ fn earth() {
     let globe = Sphere::new(Point3::new_zero(), 2., earth_surface);
 
 
-    let cam = Camera::new(16. / 9., 1000, 100, 50, 20., Point3::new(0., 0., 12.), Point3::new(0., 0., 0.), Vec3::new(0., 1., 0.), 0., 0., Color::new(0.5, 0.5, 0.5));
+    // got stuck on a stupid bug reorienting to match the picture...
+    let cam = Camera::new(16. / 9., 1000, 100, 50, 20., Point3::new(13., 3., 2.), Point3::new(0., 0., 0.), Vec3::new(0., 1., 0.), 0., 0., Color::new(0.5, 0.5, 0.5));
 
     let mut pixels = init_pixels(&cam);
 
