@@ -1,8 +1,9 @@
 use std::f64::consts::PI;
+use std::io::stderr;
 use std::sync::Arc;
 
 use crate::interval::{Interval, EMPTY};
-use crate::hittable::{Hittable, HitRecord, HittableList, BvhNode};
+use crate::hittable::{Hittable, HitRecord, BvhNode};
 use crate::vec3::{dot, unit_vector, Point3, Vec3};
 use crate::color::Color;
 use crate::ray::Ray;
@@ -69,12 +70,21 @@ impl Sphere {
 		}
 	}
 
-	fn get_sphere_uv(&self, p: &Point3) -> (f64, f64) {
+	fn get_sphere_uv(p: &Point3) -> (f64, f64) {
 		let theta = (-p.y()).acos();
 		let phi = (-p.z()).atan2(p.x()) + PI;
 
-		(phi / (2. * phi), theta / PI)
+		let inv_pi = 1.0 / PI;
+		(phi * inv_pi * 0.5, theta * inv_pi)
+	}
 
+	pub fn test_uvs() {
+		println!("{:?}", Sphere::get_sphere_uv(&Point3::new(1., 0., 0.)));
+		println!("{:?}", Sphere::get_sphere_uv(&Point3::new(0., 1., 0.)));
+		println!("{:?}", Sphere::get_sphere_uv(&Point3::new(0., 0., 1.)));
+		println!("{:?}", Sphere::get_sphere_uv(&Point3::new(-1., 0., 0.)));
+		println!("{:?}", Sphere::get_sphere_uv(&Point3::new(0., -1., 0.)));
+		println!("{:?}", Sphere::get_sphere_uv(&Point3::new(0., 0., -1.)));
 	}
 }
 
@@ -102,7 +112,9 @@ impl Hittable for Sphere {
 
 		let p = r.at(root);
 		let outward_normal = (p - center) / self.radius;
-		let (u, v) = self.get_sphere_uv(&outward_normal);
+		//outward_normal.print(&mut stderr());
+		let (u, v) = Sphere::get_sphere_uv(&outward_normal);
+
 
 		let rec = HitRecord {
 			t: root,

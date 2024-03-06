@@ -1,18 +1,20 @@
 use std::sync::Arc;
 
-use crate::{color::Color, vec3::Point3};
+use crate::{color::Color, interval::{self, Interval}, rt_image::RtImage, vec3::Point3};
 
 #[derive(Clone)]
 pub enum Texture {
 	Solid(SolidColor),
 	Checker(CheckerTexture),
+	Image(ImageTexture),
 }
 
 impl Texture {
 	pub fn value(&self, u: f64, v: f64, p: &Point3) -> Color {
 		match self {
 			Texture::Solid(t) => t.value(u, v, p),
-			Texture::Checker(t) => t.value(u, v, p)
+			Texture::Checker(t) => t.value(u, v, p),
+			Texture::Image(t) => t.value(u, v, p)
 		}
 
 	}
@@ -79,4 +81,32 @@ impl CheckerTexture {
 	}
 }
 
+#[derive(Clone)]
+pub struct ImageTexture {
+	image: RtImage
+}
 
+impl ImageTexture {
+	pub fn new(filename: &str) -> Texture {
+		Texture::Image(
+			ImageTexture {
+				image: RtImage::new(filename)
+			}
+		)
+
+	}
+
+	pub fn value(&self, u: f64, v: f64, p: &Point3) -> Color {
+		if self.image.height() <= 0 {
+			return Color::new(0., 1., 1.)
+		}
+
+		let u = u.clamp(0., 1.);
+		let v = v.clamp(0., 1.);
+
+		let i = (u * self.image.width() as f64) as u32;
+		let j = (v * self.image.height() as f64) as u32;
+
+		self.image.pixel_data(i, j)
+	}
+}

@@ -8,6 +8,7 @@ mod interval;
 mod utils;
 mod material;
 mod texture;
+mod rt_image;
 
 
 use std::sync::Arc;
@@ -17,22 +18,14 @@ use material::{Lambertian, Metal, Dielectric};
 use object::{Sphere, Sun};
 use hittable::HittableList;
 use render::{init_pixels, render_par, Camera};
-use texture::CheckerTexture;
+use rt_image::RtImage;
+use texture::{CheckerTexture, ImageTexture};
 use utils::{random_double, random_range};
 use vec3::{Point3, Vec3, random_vec3, random_vec3_range};
 use color::Color;
 
 
-fn main() {
-    let scene = 1;
-    match scene {
-        -1 => scene_three_spheres(),
-        -2 => scene_sun_spheres(),
-        1 => scene_random_balls(),
-        2 => two_spheres(),
-        _ => (),
-    }
-}
+
 
 fn scene_sun_spheres() {
     let mut world = HittableList::new();
@@ -233,4 +226,35 @@ fn two_spheres() {
     let mut pixels = init_pixels(&cam);
 
     render_par(&cam, &world, &mut pixels, &vec![]);
+}
+
+fn earth() {
+    let earth_texture = Arc::new(ImageTexture::new("earthmap.jpg"));
+    let earth_surface = Lambertian::from_texture(earth_texture);
+    let globe = Sphere::new(Point3::new_zero(), 2., earth_surface);
+
+
+    let cam = Camera::new(16. / 9., 1000, 100, 50, 20., Point3::new(0., 0., 12.), Point3::new(0., 0., 0.), Vec3::new(0., 1., 0.), 0., 0., Color::new(0.5, 0.5, 0.5));
+
+    let mut pixels = init_pixels(&cam);
+
+    let world = HittableList::from_object(globe);
+
+    render_par(&cam, &world, &mut pixels, &vec![]);
+}
+
+
+fn test_uvs() {
+    Sphere::test_uvs();
+}
+fn main() {
+    let scene = 3;
+    match scene {
+        -1 => scene_three_spheres(),
+        -2 => scene_sun_spheres(),
+        1 => scene_random_balls(),
+        2 => two_spheres(),
+        3 => earth(),
+        _ => (),
+    }
 }
