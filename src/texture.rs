@@ -1,12 +1,12 @@
 use std::sync::Arc;
 
-use crate::{color::Color, interval::{self, Interval}, rt_image::RtImage, vec3::Point3};
+use crate::{color::Color, interval::{self, Interval}, perlin::Perlin, rt_image::RtImage, vec3::Point3};
 
-#[derive(Clone)]
 pub enum Texture {
 	Solid(SolidColor),
 	Checker(CheckerTexture),
 	Image(ImageTexture),
+	Noise(NoiseTexture),
 }
 
 impl Texture {
@@ -14,14 +14,14 @@ impl Texture {
 		match self {
 			Texture::Solid(t) => t.value(u, v, p),
 			Texture::Checker(t) => t.value(u, v, p),
-			Texture::Image(t) => t.value(u, v, p)
+			Texture::Image(t) => t.value(u, v, p),
+			Texture::Noise(t) => t.value(u, v, p),
 		}
 
 	}
 }
 
 
-#[derive(Clone)]
 pub struct SolidColor {
 	color_value: Color
 }
@@ -44,7 +44,6 @@ impl SolidColor {
 	}
 }
 
-#[derive(Clone)]
 pub struct CheckerTexture {
 	inv_scale: f64,
 	even: Arc<Texture>,
@@ -81,7 +80,6 @@ impl CheckerTexture {
 	}
 }
 
-#[derive(Clone)]
 pub struct ImageTexture {
 	image: RtImage
 }
@@ -108,5 +106,21 @@ impl ImageTexture {
 		let j = (v * self.image.height() as f64) as u32;
 
 		self.image.pixel_data(i, j)
+	}
+}
+
+pub struct NoiseTexture {
+	noise: Perlin
+}
+
+impl NoiseTexture {
+	pub fn new() -> Texture {
+		Texture::Noise(
+			NoiseTexture { noise: Perlin::new() }
+		)
+	}
+
+	pub fn value(&self, u: f64, v: f64, p: &Point3) -> Color {
+		Color::new(1., 1., 1.) * self.noise.noise(p)
 	}
 }

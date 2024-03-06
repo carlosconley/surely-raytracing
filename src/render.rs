@@ -127,7 +127,7 @@ pub fn render_par(cam: &Camera, world: &HittableList, pixels: &mut Vec<Color>, s
 
 	match rayon::ThreadPoolBuilder::new().num_threads(threads.into()).build_global() {
 		Ok(_ok) => eprintln!("Rendering on {} threads", threads),
-		Err(_) => eprintln!("Could not set threads, rayon will use 4 threads.")
+		Err(_) => eprintln!("Could not set threads, rayon will use the default threads.")
 	};
 
 
