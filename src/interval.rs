@@ -17,7 +17,7 @@ pub struct Interval {
 }
 
 impl Interval {
-	pub fn _contains(&self, x: f64) -> bool {
+	pub fn contains(&self, x: f64) -> bool {
 		self.min <= x && x <= self.max
 	}
 

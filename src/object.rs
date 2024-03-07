@@ -1,10 +1,9 @@
 use std::f64::consts::PI;
-use std::io::stderr;
 use std::sync::Arc;
 
 use crate::interval::{Interval, EMPTY};
 use crate::hittable::{Hittable, HitRecord, BvhNode};
-use crate::vec3::{dot, unit_vector, Point3, Vec3};
+use crate::vec3::{cross, dot, unit_vector, Point3, Vec3};
 use crate::color::Color;
 use crate::ray::Ray;
 use crate::material::Material;
@@ -16,7 +15,7 @@ pub enum Object {
 	Sphere(Sphere),
 	//List(Arc<HittableList>),
 	Node(Arc<BvhNode>),
-	Plane(Plane)
+	_Plane(Plane)
 }
 
 impl Hittable for Object {
@@ -25,7 +24,7 @@ impl Hittable for Object {
 			Object::Sphere(o) => o.hit(r, ray_t),
 			//Object::List(o) => o.hit(r, ray_t),
 			Object::Node(o) => o.hit(r, ray_t),
-			Object::Plane(p) => p.hit(r, ray_t)
+			Object::_Plane(p) => p.hit(r, ray_t)
 		}
 	}
 
@@ -34,7 +33,7 @@ impl Hittable for Object {
 			Object::Sphere(o) => o.bounding_box(),
 			//Object::List(o) => o.bounding_box(),
 			Object::Node(o) => o.bounding_box(),
-			Object::Plane(o) => o.bounding_box()
+			Object::_Plane(o) => o.bounding_box()
 		}
 	}
 }
@@ -172,7 +171,7 @@ pub struct Plane {
 }
 impl Plane {
 	pub fn new(point: Point3, normal: Vec3, mat: Material) -> Object {
-		Object::Plane(Plane {
+		Object::_Plane(Plane {
 			point, normal: unit_vector(&normal), mat
 		})
 	}
@@ -284,4 +283,68 @@ impl Aabb {
 		true
 	}
 
+	pub fn pad(&self) -> Aabb {
+		let delta = 0.0001;
+		Aabb::new(
+			if self.x.size() >= delta { self.x.clone() } else { self.x.expand(delta) },
+			if self.y.size() >= delta { self.y.clone() } else { self.y.expand(delta) },
+			if self.z.size() >= delta { self.z.clone() } else { self.z.expand(delta) }
+		)
+	}
+
 }
+
+struct Quad {
+	q: Point3,
+	u: Vec3,
+	v: Vec3,
+	mat: Material,
+	bbox: Aabb,
+	normal: Vec3,
+	d: f64
+}
+
+impl Quad {
+	pub fn new (&self, q: Point3, u: Vec3, v: Vec3, mat: Material) -> Quad {
+		let bbox = Aabb::from_points(&q, &(q + u + v));
+		let normal = unit_vector(&cross(&u, &v));
+
+		Quad {
+			q, u, v, mat, bbox, normal, d: dot(&normal, &q)
+		}
+	}
+
+}
+
+impl Hittable for Quad {
+	fn bounding_box(&self) -> Option<&Aabb> {
+		Some(&self.bbox)
+	}
+
+	fn hit(&self, r: &Ray, ray_t: &Interval) -> Option<HitRecord> {
+		let denom = dot(&self.normal, &r.direction());
+
+		// No hit if ray is parallel to plane
+		if denom.abs() < 1e-8 {
+			return None;
+		}
+
+
+		let t = (self.d - dot(&self.normal, &r.origin())) / denom;
+		if !ray_t.contains(t) {
+			return None;
+		}
+
+		let p = r.at(t);
+		Some(HitRecord {
+			t,
+			p,
+			mat: &self.mat,
+			front_face: true,
+			normal: Point3::new_zero(),
+			u: 0., v: 0.
+		}.set_face_normal(r, &self.normal))
+
+	}
+}
+
