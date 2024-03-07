@@ -94,7 +94,7 @@ impl ImageTexture {
 
 	}
 
-	pub fn value(&self, u: f64, v: f64, p: &Point3) -> Color {
+	pub fn value(&self, u: f64, v: f64, _p: &Point3) -> Color {
 		if self.image.height() <= 0 {
 			return Color::new(0., 1., 1.)
 		}
@@ -110,17 +110,23 @@ impl ImageTexture {
 }
 
 pub struct NoiseTexture {
-	noise: Perlin
+	noise: Perlin,
+	scale: f64
 }
 
 impl NoiseTexture {
-	pub fn new() -> Texture {
+	pub fn new(scale: f64) -> Texture {
 		Texture::Noise(
-			NoiseTexture { noise: Perlin::new() }
+			NoiseTexture { noise: Perlin::new(), scale }
 		)
 	}
 
-	pub fn value(&self, u: f64, v: f64, p: &Point3) -> Color {
-		Color::new(1., 1., 1.) * self.noise.noise(p)
+	pub fn default() -> Texture {
+		NoiseTexture::new(1.)
+	}
+
+	pub fn value(&self, _u: f64, _v: f64, p: &Point3) -> Color {
+		let s = self.scale * *p;
+		Color::new(1., 1., 1.) * 0.5 * (1. + (s.z() + 10. * self.noise.turb(&s)).sin())
 	}
 }
