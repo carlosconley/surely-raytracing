@@ -205,24 +205,26 @@ fn ray_color(r: &Ray, depth: i32, world: &dyn Hittable, suns: &Vec<Sun>, cam: &C
 
 	match world.hit(r, &Interval {min: 0.0001, max:  INF }) {
 		Some(rec) => {
+			let color_from_emission = rec.mat.emitted(rec.u, rec.v, &rec.p);
 			match rec.mat.scatter(r, &rec) {
 				Some((attenuation, scattered)) => {
-					attenuation * ray_color(&scattered, depth - 1, world, suns, cam)
+					let color_from_scatter = attenuation * ray_color(&scattered, depth - 1, world, suns, cam);
+					color_from_emission + color_from_scatter
 				},
-				None => Color::new_zero()
+				None => color_from_emission
 			}
 		}
 		None => {
 			// This sets the skybox + ambient light
-			let sun_light = match suns
+			/*let sun_light = match suns
 				.iter()
 				.map(|sun| sun.hit(&r) )
 				.reduce(|s1, s2| s1 + s2 ) {
 					Some(light) => light,
 					None => Color::new_zero()
-			};
+			};*/
 
-			cam.background + sun_light
+			cam.background //+ sun_light
 		}
 	}
 

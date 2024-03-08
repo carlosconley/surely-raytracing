@@ -1,12 +1,7 @@
 
 use std::sync::Arc;
 
-use crate::{color::Color,
-	hittable::HitRecord,
-	ray::Ray,
-	vec3::{random_unit_vector, reflect, unit_vector, refract, dot},
-	utils::random_double,
-	texture::{ Texture, SolidColor },
+use crate::{color::Color, hittable::HitRecord, ray::Ray, texture::{ SolidColor, Texture }, utils::random_double, vec3::{dot, random_unit_vector, reflect, refract, unit_vector, Point3}
 };
 
 #[derive(Clone)]
@@ -14,6 +9,7 @@ pub enum Material {
 	Lambertian(Lambertian),
 	Metal(Metal),
 	Dielectric(Dielectric),
+	DiffuseLight(DiffuseLight),
 }
 
 impl MatFn for Material {
@@ -21,7 +17,15 @@ impl MatFn for Material {
 		match self {
 			Material::Lambertian(l) => l.scatter(r_in, rec),
 			Material::Metal(m) => m.scatter(r_in, rec),
-			Material::Dielectric(d) => d.scatter(r_in, rec)
+			Material::Dielectric(d) => d.scatter(r_in, rec),
+			Material::DiffuseLight(d) => d.scatter(r_in, rec)
+		}
+	}
+
+	fn emitted(&self, u: f64, v: f64, p: &Point3) -> Color {
+		match self {
+			Material::DiffuseLight(l) => l.emitted(u, v, p),
+			_ => Color::new_zero(),
 		}
 	}
 }
@@ -32,6 +36,10 @@ pub trait MatFn {
 		r_in: &Ray,
 		rec: &HitRecord,
 	) -> Option<(Color, Ray)>;
+
+	fn emitted(&self, u: f64, v: f64, p: &Point3) -> Color {
+		Color::new_zero()
+	}
 }
 
 
@@ -129,4 +137,38 @@ impl MatFn for Dielectric {
 
 		Some((self.tint, Ray::new_timed(rec.p, direction, r_in.time())))
 	}
+}
+
+#[derive(Clone)]
+pub struct DiffuseLight {
+	emit: Arc<Texture>	
+}
+
+impl DiffuseLight {
+	pub fn new(c: Color) -> Material {
+		Material::DiffuseLight(
+			DiffuseLight {
+				emit: Arc::new(SolidColor::new(c))
+			}
+		)
+	}
+
+	pub fn from_texture(emit: Arc<Texture>) -> Material {
+		Material::DiffuseLight(
+			DiffuseLight {
+				emit
+			}
+		)
+	}
+
+	pub fn emitted(&self, u: f64, v: f64, p: &Point3) -> Color {
+		self.emit.value(u, v, p)
+	}
+}
+
+impl MatFn for DiffuseLight {
+	fn scatter(&self, r_in: &Ray, rec: &HitRecord) -> Option<(Color, Ray)> {
+		None
+	}
+
 }

@@ -15,11 +15,11 @@ mod perlin;
 use std::sync::Arc;
 
 // type aliasing
-use material::{Lambertian, Metal, Dielectric};
-use object::{Sphere, Sun};
+use material::{Dielectric, DiffuseLight, Lambertian, Metal};
+use object::{Quad, Sphere, Sun};
 use hittable::HittableList;
 use render::{init_pixels, render_par, Camera};
-use texture::{CheckerTexture, ImageTexture, NoiseTexture, SolidColor};
+use texture::{CheckerTexture, ImageTexture, NoiseTexture };
 use utils::{random_double, random_range};
 use vec3::{Point3, Vec3, random_vec3, random_vec3_range};
 use color::Color;
@@ -266,8 +266,76 @@ fn two_perlin_spheres() {
     render_par(&cam, &world, &mut pixels, &vec![]);
 }
 
+fn quads() {
+    let mut world = HittableList::new();
+
+    let left_red = Lambertian::new(Color::new(1., 0.2, 0.2));
+    let back_green = Lambertian::new(Color::new(0.2, 1.0, 0.2));
+    let right_blue = Lambertian::new(Color::new(0.2, 0.2, 1.0));
+    let upper_orange = Lambertian::new(Color::new(1.0, 0.5, 0.));
+    let lower_teal = Lambertian::new(Color::new(0.2, 0.8, 0.8));
+
+    world.add(Quad::new(Point3::new(-3., -2., 5.), Vec3::new(0., 0., -4.), Vec3::new(0., 4., 0.), left_red));
+    world.add(Quad::new(Point3::new(-2., -2., 0.), Vec3::new(4., 0., 0.), Vec3::new(0., 4., 0.), back_green));
+    world.add(Quad::new(Point3::new(3., -2., 1.), Vec3::new(0., 0., 4.), Vec3::new(0., 4., 0.), right_blue));
+    world.add(Quad::new(Point3::new(-2., 3., 1.), Vec3::new(4., 0., 0.), Vec3::new(0., 0., 4.), upper_orange));
+    world.add(Quad::new(Point3::new(-2., -3., 5.), Vec3::new(4., 0., 0.), Vec3::new(0., 0., -4.), lower_teal));
+
+
+    let cam = Camera::new(
+        1.0,
+        400,
+        100,
+        50,
+        80.,
+        Point3::new(0., 0., 9.),
+        Point3::new(0., 0., 0.),
+        Vec3::new(0., 1., 0.),
+        0.,
+        0.,
+        Color::new(0.6, 0.7, 1.)
+    );
+
+
+    let mut pixels = init_pixels(&cam);
+
+    render_par(&cam, &world, &mut pixels, &vec![]);
+
+}
+
+fn simple_light() {
+    let mut world = HittableList::new();
+
+    let pertex = Arc::new(NoiseTexture::new(4.));
+    world.add(Sphere::new(Point3::new(0., -1000., 0.), 1000., Lambertian::from_texture(pertex.clone())));
+    world.add(Sphere::new(Point3::new(0., 2., 0.), 2., Lambertian::from_texture(pertex)));
+
+    let difflight = DiffuseLight::new(Color::new(4., 4., 4.));
+    world.add(Quad::new(Point3::new(3., 1., -2.), Vec3::new(2., 0., 0.), Vec3::new(0., 2., 0.), difflight.clone()));
+    world.add(Sphere::new(Point3::new(0., 7., 0.), 2., difflight));
+
+    let cam = Camera::new(
+        16. / 9.,
+        400,
+        400,
+        50,
+        20.,
+        Point3::new(26., 3., 6.),
+        Point3::new(0., 2., 0.),
+        Vec3::new(0., 1., 0.),
+        0.,
+        0.,
+        Color::new_zero()
+    );
+
+
+    let mut pixels = init_pixels(&cam);
+
+    render_par(&cam, &world, &mut pixels, &vec![]);
+}
+
 fn main() {
-    let scene = 4;
+    let scene = 6;
     match scene {
         -1 => scene_three_spheres(),
         -2 => scene_sun_spheres(),
@@ -275,6 +343,8 @@ fn main() {
         2 => two_spheres(),
         3 => earth(),
         4 => two_perlin_spheres(),
+        5 => quads(),
+        6 => simple_light(),
         _ => (),
     }
 }

@@ -45,7 +45,7 @@ fn _gamma_to_linear(gamma: f64) -> f64 {
 	}
 }
 
-fn linear_to_gamma_fast(linear: f64) -> f64 {
+fn _linear_to_gamma_fast(linear: f64) -> f64 {
 	linear.sqrt()
 }
 

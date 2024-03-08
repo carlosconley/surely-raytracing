@@ -15,7 +15,8 @@ pub enum Object {
 	Sphere(Sphere),
 	//List(Arc<HittableList>),
 	Node(Arc<BvhNode>),
-	_Plane(Plane)
+	_Plane(Plane),
+	Quad(Quad),
 }
 
 impl Hittable for Object {
@@ -24,6 +25,7 @@ impl Hittable for Object {
 			Object::Sphere(o) => o.hit(r, ray_t),
 			//Object::List(o) => o.hit(r, ray_t),
 			Object::Node(o) => o.hit(r, ray_t),
+			Object::Quad(o) => o.hit(r, ray_t),
 			Object::_Plane(p) => p.hit(r, ray_t)
 		}
 	}
@@ -33,7 +35,8 @@ impl Hittable for Object {
 			Object::Sphere(o) => o.bounding_box(),
 			//Object::List(o) => o.bounding_box(),
 			Object::Node(o) => o.bounding_box(),
-			Object::_Plane(o) => o.bounding_box()
+			Object::_Plane(o) => o.bounding_box(),
+			Object::Quad(o) => o.bounding_box()
 		}
 	}
 }
@@ -294,24 +297,29 @@ impl Aabb {
 
 }
 
-struct Quad {
+#[derive(Clone)]
+pub struct Quad {
 	q: Point3,
 	u: Vec3,
 	v: Vec3,
 	mat: Material,
 	bbox: Aabb,
 	normal: Vec3,
-	d: f64
+	d: f64,
+	w: Vec3,
 }
 
 impl Quad {
-	pub fn new (&self, q: Point3, u: Vec3, v: Vec3, mat: Material) -> Quad {
-		let bbox = Aabb::from_points(&q, &(q + u + v));
-		let normal = unit_vector(&cross(&u, &v));
+	pub fn new (q: Point3, u: Vec3, v: Vec3, mat: Material) -> Object {
+		let bbox = Aabb::from_points(&q, &(q + u + v)).pad();
+		let n = cross(&u, &v);
+		let normal = unit_vector(&n);
+		let w = n / dot(&n, &n);
 
-		Quad {
-			q, u, v, mat, bbox, normal, d: dot(&normal, &q)
-		}
+
+		Object::Quad(Quad {
+			q, u, v, mat, bbox, normal, d: dot(&normal, &q), w
+		})
 	}
 
 }
@@ -329,20 +337,30 @@ impl Hittable for Quad {
 			return None;
 		}
 
-
 		let t = (self.d - dot(&self.normal, &r.origin())) / denom;
 		if !ray_t.contains(t) {
 			return None;
 		}
 
-		let p = r.at(t);
+		// Determine if hit point is within planar shape using plane coords
+		let intersection = r.at(t);
+		let planar_hitpt_vector = intersection - self.q;
+		let a = dot(&self.w, &cross(&planar_hitpt_vector, &self.v));
+		let b = dot(&self.w, &cross(&self.u, &planar_hitpt_vector));
+
+		// If the hit point is in the primitive
+		if (a < 0.) || (1. < a) || (b < 0.) || (1. < b) {
+			return None
+		}
+
+		// Set rest of hit record
 		Some(HitRecord {
 			t,
-			p,
+			p: intersection,
 			mat: &self.mat,
 			front_face: true,
 			normal: Point3::new_zero(),
-			u: 0., v: 0.
+			u: a, v: b,
 		}.set_face_normal(r, &self.normal))
 
 	}
