@@ -334,8 +334,42 @@ fn simple_light() {
     render_par(&cam, &world, &mut pixels, &vec![]);
 }
 
+fn cornell_box() {
+    let mut world = HittableList::new();
+
+    let red = Lambertian::new(Color::new(0.65, 0.05, 0.05));
+    let white = Lambertian::new(Color::new(0.73, 0.73, 0.73));
+    let green = Lambertian::new(Color::new(0.12, 0.45, 0.15));
+    let light = DiffuseLight::new(Color::new(15., 15., 15.));
+
+    world.add(Quad::new(Point3::new(555., 0., 0.), Vec3::new(0., 555., 0.), Vec3::new(0., 0., 555.), green));
+    world.add(Quad::new(Point3::new(0., 0., 0.), Vec3::new(0., 555., 0.), Vec3::new(0., 0., 555.), red));
+    world.add(Quad::new(Point3::new(343., 554., 332.), Vec3::new(-130., 0., 0.), Vec3::new(0., 0., -105.), light));
+    world.add(Quad::new(Point3::new(0., 0., 0.), Vec3::new(555., 0., 0.), Vec3::new(0., 0., 555.), white.clone()));
+    world.add(Quad::new(Point3::new(555., 555., 555.), Vec3::new(-555., 0., 0.), Vec3::new(0., 0., -555.), white.clone()));
+    world.add(Quad::new(Point3::new(0., 0., 555.), Vec3::new(555., 0., 0.), Vec3::new(0., 555., 0.), white.clone()));
+
+
+
+    let cam = Camera::new(
+        16. / 9.,
+        600,
+        200,
+        50,
+        40.,
+        Point3::new(278., 278., -800.),
+        Point3::new(278., 278., 0.),
+        Vec3::new(0., 1., 0.),
+        0.,
+        0.,
+        Color::new_zero()
+    );
+
+    let mut pixels = init_pixels(&cam);
+    render_par(&cam, &world, &mut pixels, &vec![]);
+}
 fn main() {
-    let scene = 6;
+    let scene = 7;
     match scene {
         -1 => scene_three_spheres(),
         -2 => scene_sun_spheres(),
@@ -345,6 +379,7 @@ fn main() {
         4 => two_perlin_spheres(),
         5 => quads(),
         6 => simple_light(),
+        7 => cornell_box(),
         _ => (),
     }
 }
