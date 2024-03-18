@@ -16,7 +16,7 @@ use std::sync::Arc;
 
 // type aliasing
 use material::{Dielectric, DiffuseLight, Lambertian, Metal};
-use object::{Quad, Sphere, Sun};
+use object::{Quad, Sphere, Sun, make_box};
 use hittable::HittableList;
 use render::{init_pixels, render_par, Camera};
 use texture::{CheckerTexture, ImageTexture, NoiseTexture };
@@ -349,10 +349,14 @@ fn cornell_box() {
     world.add(Quad::new(Point3::new(555., 555., 555.), Vec3::new(-555., 0., 0.), Vec3::new(0., 0., -555.), white.clone()));
     world.add(Quad::new(Point3::new(0., 0., 555.), Vec3::new(555., 0., 0.), Vec3::new(0., 555., 0.), white.clone()));
 
+    world.add(make_box(&Point3::new(130., 0., 65.), &Point3::new(295., 165., 230.), &white.clone()));
+    world.add(make_box(&Point3::new(256., 0., 295.), &Point3::new(430., 330., 460.), &white.clone()));
 
+
+    //let world = world.create_bvh();
 
     let cam = Camera::new(
-        16. / 9.,
+        1.,
         600,
         200,
         50,

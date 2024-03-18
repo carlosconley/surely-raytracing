@@ -2,7 +2,7 @@ use std::f64::consts::PI;
 use std::sync::Arc;
 
 use crate::interval::{Interval, EMPTY};
-use crate::hittable::{Hittable, HitRecord, BvhNode};
+use crate::hittable::{BvhNode, HitRecord, Hittable, HittableList};
 use crate::vec3::{cross, dot, unit_vector, Point3, Vec3};
 use crate::color::Color;
 use crate::ray::Ray;
@@ -13,7 +13,7 @@ use crate::material::Material;
 #[derive(Clone)]
 pub enum Object {
 	Sphere(Sphere),
-	//List(Arc<HittableList>),
+	List(Arc<HittableList>),
 	Node(Arc<BvhNode>),
 	_Plane(Plane),
 	Quad(Quad),
@@ -23,7 +23,7 @@ impl Hittable for Object {
 	fn hit(&self, r: &Ray, ray_t: &Interval) -> Option<HitRecord> {
 		match self {
 			Object::Sphere(o) => o.hit(r, ray_t),
-			//Object::List(o) => o.hit(r, ray_t),
+			Object::List(o) => o.hit(r, ray_t),
 			Object::Node(o) => o.hit(r, ray_t),
 			Object::Quad(o) => o.hit(r, ray_t),
 			Object::_Plane(p) => p.hit(r, ray_t)
@@ -33,7 +33,7 @@ impl Hittable for Object {
 	fn bounding_box(&self) -> Option<&Aabb> {
 		match self {
 			Object::Sphere(o) => o.bounding_box(),
-			//Object::List(o) => o.bounding_box(),
+			Object::List(o) => o.bounding_box(),
 			Object::Node(o) => o.bounding_box(),
 			Object::_Plane(o) => o.bounding_box(),
 			Object::Quad(o) => o.bounding_box()
@@ -364,5 +364,36 @@ impl Hittable for Quad {
 		}.set_face_normal(r, &self.normal))
 
 	}
+}
+
+pub fn make_box(a: &Point3, b: &Point3, mat: &Material) -> Object {
+	// Returns the 3D box that contains the two opposite vertices a & b.
+
+	let mut sides = HittableList::new();
+
+	// Construct the two opposite vertices with the minimum and maximum coords.
+	let min = Point3::new(
+		a.x().min(b.x()),
+		a.y().min(b.y()),
+		a.z().min(b.z()),
+	);
+	let max = Point3::new(
+		a.x().max(b.x()),
+		a.y().max(b.y()),
+		a.z().max(b.z()),
+	);
+
+	let dx = Vec3::new(max.x() - min.x(), 0., 0.);
+	let dy = Vec3::new(0., max.y() - min.y(), 0.);
+	let dz = Vec3::new(0., 0., max.z() - min.z());
+
+	sides.add(Quad::new(Point3::new(min.x(), min.y(), max.z()), dx, dy, mat.clone()));
+	sides.add(Quad::new(Point3::new(max.x(), min.y(), max.z()), -dz, dy, mat.clone()));
+	sides.add(Quad::new(Point3::new(max.x(), min.y(), min.z()), -dx, dy, mat.clone()));
+	sides.add(Quad::new(Point3::new(min.x(), min.y(), min.z()), dz, dy, mat.clone()));
+	sides.add(Quad::new(Point3::new(min.x(), max.y(), max.z()), dx,-dz, mat.clone()));
+	sides.add(Quad::new(Point3::new(min.x(), min.y(), min.z()), dx,dz, mat.clone()));
+
+	Object::List(Arc::new(sides))
 }
 
