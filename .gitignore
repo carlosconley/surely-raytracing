@@ -2,3 +2,5 @@
 *.ppm
 *.png
 *.jpg
+.RData
+.Rhistory
