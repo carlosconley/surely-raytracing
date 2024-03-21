@@ -1,28 +1,35 @@
 use crate::{
-    hittable::{HittableList, Hittable, HitRecord},
-    object::Object,
-    vec3::Vec3,
-    ray::Ray,
+    hittable::{HitRecord, Hittable},
     interval::Interval,
+    object::{Aabb, Object},
+    ray::Ray,
+    vec3::Vec3,
 };
-
 
 pub enum Transform {
     Translate(Translate),
-//    RotY(RotateY),
-//   RotX(RotateX),
+    //    RotY(RotateY),
+    //   RotX(RotateX),
 }
 
 pub struct Translate {
     object: Object,
     offset: Vec3,
+    bbox: Aabb,
 }
 
 impl Translate {
+    pub fn new(p: Object, displacement: &Vec3) -> Transform {
+        Transform::Translate(Translate {
+            object: p,
+            offset: *displacement,
+            bbox: p.bounding_box() + *displacement,
+        })
+    }
 }
 
 impl Hittable for Translate {
-    fn hit(&self, r: &crate::ray::Ray, ray_t: &crate::interval::Interval) -> Option<HitRecord> {
+    fn hit(&self, r: &crate::ray::Ray, ray_t: &Interval) -> Option<HitRecord> {
         // Move ray backwards by the offset
         let offset_r = Ray::new_timed(r.origin() - self.offset, r.direction(), r.time());
 
@@ -32,18 +39,11 @@ impl Hittable for Translate {
             Some(mut rec) => {
                 rec.p = rec.p + self.offset;
                 Some(rec)
-            },
-
+            }
         }
     }
 
-
     fn bounding_box(&self) -> Option<&crate::object::Aabb> {
-        
+        Some(&self.bbox)
     }
-
 }
-
-
-
-
