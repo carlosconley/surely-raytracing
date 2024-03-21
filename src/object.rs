@@ -9,6 +9,7 @@ use crate::ray::Ray;
 use crate::material::Material;
 
 
+
 // Using Arc's for now, but figure out more efficient way to do it later
 #[derive(Clone)]
 pub enum Object {
@@ -17,6 +18,7 @@ pub enum Object {
 	Node(Arc<BvhNode>),
 	_Plane(Plane),
 	Quad(Quad),
+    Transform(Transform),
 }
 
 impl Hittable for Object {

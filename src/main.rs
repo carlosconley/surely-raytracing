@@ -10,6 +10,7 @@ mod material;
 mod texture;
 mod rt_image;
 mod perlin;
+mod transform;
 
 
 use std::sync::Arc;
