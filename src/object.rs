@@ -1,6 +1,6 @@
 use std::f64::consts::PI;
-use std::sync::Arc;
 use std::ops;
+use std::sync::Arc;
 
 use crate::color::Color;
 use crate::hittable::{BvhNode, HitRecord, Hittable, HittableList};
@@ -328,22 +328,24 @@ impl Aabb {
             },
         )
     }
-
 }
 
 impl ops::Add<Vec3> for Aabb {
     type Output = Aabb;
 
     fn add(self, offset: Vec3) -> Aabb {
-        Aabb::new(self.x + offset.x(), self.y + offset.y(), self.z + offset.z())
+        Aabb::new(
+            self.x + offset.x(),
+            self.y + offset.y(),
+            self.z + offset.z(),
+        )
     }
-    
 }
 
 impl ops::Add<Aabb> for Vec3 {
     type Output = Aabb;
 
-    fn add(self, bbox: Aabb)  -> Aabb {
+    fn add(self, bbox: Aabb) -> Aabb {
         bbox + self
     }
 }

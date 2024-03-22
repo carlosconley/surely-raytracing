@@ -6,7 +6,6 @@ use crate::{
     vec3::Vec3,
 };
 
-
 #[derive(Clone)]
 pub enum Transform {
     Translate(Translate),
@@ -39,7 +38,7 @@ impl Translate {
     pub fn new(p: Object, displacement: &Vec3) -> Transform {
         let bbox = match p.bounding_box() {
             None => panic!(),
-            Some(bbox) => *bbox, 
+            Some(bbox) => *bbox,
         };
         Transform::Translate(Translate {
             bbox: bbox + *displacement,

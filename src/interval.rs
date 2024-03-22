@@ -60,7 +60,10 @@ impl Interval {
 impl ops::Add<Interval> for f64 {
     type Output = Interval;
     fn add(self, ival: Interval) -> Interval {
-        Interval { min: ival.min + self, max: ival.max + self }
+        Interval {
+            min: ival.min + self,
+            max: ival.max + self,
+        }
     }
 }
 
@@ -71,4 +74,3 @@ impl ops::Add<f64> for Interval {
         self + displacement
     }
 }
-
