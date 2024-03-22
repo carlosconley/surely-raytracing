@@ -6,24 +6,45 @@ use crate::{
     vec3::Vec3,
 };
 
+
+#[derive(Clone)]
 pub enum Transform {
     Translate(Translate),
     //    RotY(RotateY),
     //   RotX(RotateX),
 }
 
+#[derive(Clone)]
 pub struct Translate {
-    object: Object,
+    object: Box<Object>,
     offset: Vec3,
     bbox: Aabb,
 }
 
+impl Hittable for Transform {
+    fn hit(&self, r: &Ray, ray_t: &Interval) -> Option<HitRecord> {
+        match self {
+            Self::Translate(t) => t.hit(r, ray_t),
+        }
+    }
+
+    fn bounding_box(&self) -> Option<&Aabb> {
+        match self {
+            Self::Translate(t) => t.bounding_box(),
+        }
+    }
+}
+
 impl Translate {
     pub fn new(p: Object, displacement: &Vec3) -> Transform {
+        let bbox = match p.bounding_box() {
+            None => panic!(),
+            Some(bbox) => *bbox, 
+        };
         Transform::Translate(Translate {
-            object: p,
+            bbox: bbox + *displacement,
+            object: Box::new(p),
             offset: *displacement,
-            bbox: p.bounding_box() + *displacement,
         })
     }
 }
