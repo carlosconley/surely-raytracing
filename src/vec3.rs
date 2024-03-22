@@ -52,6 +52,15 @@ impl Vec3 {
         self.z
     }
 
+    pub fn set(&mut self, dim: u8, val: f64) {
+        match dim {
+            0 => self.x = val,
+            1 => self.y = val,
+            2 => self.z = val,
+            _ => panic!("Cannot access beyond dim 2")
+        }
+    }
+
     pub fn dim(&self, n: u8) -> f64 {
         match n {
             0 => self.x,

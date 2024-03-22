@@ -71,6 +71,6 @@ impl ops::Add<f64> for Interval {
     type Output = Interval;
 
     fn add(self, displacement: f64) -> Self::Output {
-        self + displacement
+        displacement + self
     }
 }

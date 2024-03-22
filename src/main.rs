@@ -21,6 +21,7 @@ use material::{Dielectric, DiffuseLight, Lambertian, Metal};
 use object::{make_box, Quad, Sphere, Sun};
 use render::{init_pixels, render_par, Camera};
 use texture::{CheckerTexture, ImageTexture, NoiseTexture};
+use transform::{RotateY, Translate};
 use utils::{random_double, random_range};
 use vec3::{random_vec3, random_vec3_range, Point3, Vec3};
 
@@ -454,16 +455,24 @@ fn cornell_box() {
         white.clone(),
     ));
 
-    world.add(make_box(
-        &Point3::new(130., 0., 65.),
-        &Point3::new(295., 165., 230.),
+    let box1 = make_box(
+        &Point3::new_zero(),
+        &Point3::new(165., 330., 165.),
         &white.clone(),
-    ));
-    world.add(make_box(
-        &Point3::new(256., 0., 295.),
-        &Point3::new(430., 330., 460.),
+    );
+
+    let box1 = RotateY::new(box1.into(), 15.);
+    let box1 = Translate::new(box1.into(), Vec3::new(265., 0., 295.));
+    world.add(box1);
+
+    let box2 = make_box(
+        &Point3::new_zero(),
+        &Point3::new(165., 165., 165.),
         &white.clone(),
-    ));
+    );
+    let box2 = RotateY::new(box2.into(), -18.);
+    let box2 = Translate::new(box2.into(), Vec3::new(130., 0., 65.));
+    world.add(box2);
 
     //let world = world.create_bvh();
 
