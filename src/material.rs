@@ -115,6 +115,10 @@ impl Dielectric {
         Material::Dielectric(Dielectric { tint, ir })
     }
 
+    pub fn new_clear(ir: f64) -> Material {
+        Self::new(ir, Color::new(1., 1., 1.))
+    }
+
     fn reflectance(&self, cosine: f64, ref_idx: f64) -> f64 {
         // Use Schlick's approximation for reflectance
 
