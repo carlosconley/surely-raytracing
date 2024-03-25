@@ -619,7 +619,7 @@ fn final_scene(image_width: i32, samples_per_pixel: i32, max_depth: i32) {
         light,
     ));
 
-    let center1 = Point3::new(400., 400., 400.);
+    let center1 = Point3::new(400., 400., 200.);
     let center2 = center1 + Vec3::new(30., 0., 0.);
 
     let sphere_material = Lambertian::new(Color::new(0.7, 0.3, 0.1));
@@ -637,7 +637,7 @@ fn final_scene(image_width: i32, samples_per_pixel: i32, max_depth: i32) {
     ));
 
     let boundary = Sphere::new(
-        Point3::new(160., 140., 145.),
+        Point3::new(360., 150., 145.),
         70.,
         Dielectric::new_clear(1.5),
     );
@@ -663,7 +663,6 @@ fn final_scene(image_width: i32, samples_per_pixel: i32, max_depth: i32) {
         Lambertian::from_texture(pertext.into()),
     ));
 
-    // TODO: finish boxes2
     let mut boxes2 = HittableList::new();
     let white = Lambertian::new(Color::new(0.73, 0.73, 0.73));
     let ns = 1000;
@@ -673,9 +672,9 @@ fn final_scene(image_width: i32, samples_per_pixel: i32, max_depth: i32) {
     }
 
     world.add(Translate::new(
-            RotateY::new(
-                Object::List(boxes2.create_bvh().into()).into(), 15.).into(),
-            Vec3::new(-100., 270., 395.)));
+        RotateY::new(Object::List(boxes2.create_bvh().into()).into(), 15.).into(),
+        Vec3::new(-100., 270., 395.),
+    ));
 
     let cam = Camera::new(
         1.0,
@@ -695,7 +694,7 @@ fn final_scene(image_width: i32, samples_per_pixel: i32, max_depth: i32) {
     render_par(&cam, &world, &mut pixels, &vec![]);
 }
 fn main() {
-    let scene = 100;
+    let scene = 9;
     match scene {
         -1 => scene_three_spheres(),
         -2 => scene_sun_spheres(),
