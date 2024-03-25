@@ -1,6 +1,6 @@
 target/
-*.ppm
-*.png
-*.jpg
+/*.ppm
+/*.png
+/*.jpg
 .RData
 .Rhistory
