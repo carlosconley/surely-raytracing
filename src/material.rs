@@ -15,6 +15,7 @@ pub enum Material {
     Metal(Metal),
     Dielectric(Dielectric),
     DiffuseLight(DiffuseLight),
+    Isotropic(Isotropic),
 }
 
 impl MatFn for Material {
@@ -24,6 +25,7 @@ impl MatFn for Material {
             Material::Metal(m) => m.scatter(r_in, rec),
             Material::Dielectric(d) => d.scatter(r_in, rec),
             Material::DiffuseLight(d) => d.scatter(r_in, rec),
+            Material::Isotropic(d) => d.scatter(r_in, rec),
         }
     }
 
@@ -174,3 +176,28 @@ impl MatFn for DiffuseLight {
     }
 }
 
+#[derive(Clone)]
+pub struct Isotropic {
+    albedo: Arc<Texture>,
+}
+
+impl Isotropic {
+    pub fn new(c: Color) -> Material {
+        Material::Isotropic(Isotropic {
+            albedo: Arc::new(SolidColor::new(c))
+        })
+    }
+
+    pub fn from_texture(albedo: Arc<Texture>) -> Material {
+        Material::Isotropic(Isotropic { albedo })
+    }
+}
+
+impl MatFn for Isotropic {
+    fn scatter(&self, r_in: &Ray, rec: &HitRecord) -> Option<(Color, Ray)> {
+        Some((
+            self.albedo.value(rec.u, rec.v, &rec.p),
+            Ray::new_timed(rec.p, random_unit_vector(), r_in.time())
+        ))
+    }
+}

@@ -3,6 +3,7 @@ use std::ops;
 use std::sync::Arc;
 
 use crate::color::Color;
+use crate::constant_medium::ConstantMedium;
 use crate::hittable::{BvhNode, HitRecord, Hittable, HittableList};
 use crate::interval::{Interval, EMPTY};
 use crate::material::Material;
@@ -19,6 +20,7 @@ pub enum Object {
     _Plane(Plane),
     Quad(Quad),
     Transform(Transform),
+    Volume(ConstantMedium),
 }
 
 impl Hittable for Object {
@@ -30,6 +32,7 @@ impl Hittable for Object {
             Object::Quad(o) => o.hit(r, ray_t),
             Object::_Plane(p) => p.hit(r, ray_t),
             Object::Transform(p) => p.hit(r, ray_t),
+            Object::Volume(p) => p.hit(r, ray_t),
         }
     }
 
@@ -41,6 +44,7 @@ impl Hittable for Object {
             Object::_Plane(o) => o.bounding_box(),
             Object::Quad(o) => o.bounding_box(),
             Object::Transform(o) => o.bounding_box(),
+            Object::Volume(o) => o.bounding_box(),
         }
     }
 }

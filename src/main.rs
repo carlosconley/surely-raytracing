@@ -11,6 +11,7 @@ mod texture;
 mod transform;
 mod utils;
 mod vec3;
+mod constant_medium;
 
 use std::sync::Arc;
 
@@ -24,6 +25,7 @@ use texture::{CheckerTexture, ImageTexture, NoiseTexture};
 use transform::{RotateY, Translate};
 use utils::{random_double, random_range};
 use vec3::{random_vec3, random_vec3_range, Point3, Vec3};
+use constant_medium::ConstantMedium;
 
 fn scene_sun_spheres() {
     let mut world = HittableList::new();
@@ -493,8 +495,95 @@ fn cornell_box() {
     let mut pixels = init_pixels(&cam);
     render_par(&cam, &world, &mut pixels, &vec![]);
 }
+
+fn cornell_smoke() {
+    let mut world = HittableList::new();
+
+    let red = Lambertian::new(Color::new(0.65, 0.05, 0.05));
+    let white = Lambertian::new(Color::new(0.73, 0.73, 0.73));
+    let green = Lambertian::new(Color::new(0.12, 0.45, 0.15));
+    let light = DiffuseLight::new(Color::new(7., 7., 7.));
+
+    world.add(Quad::new(
+        Point3::new(555., 0., 0.),
+        Vec3::new(0., 555., 0.),
+        Vec3::new(0., 0., 555.),
+        green,
+    ));
+    world.add(Quad::new(
+        Point3::new(0., 0., 0.),
+        Vec3::new(0., 555., 0.),
+        Vec3::new(0., 0., 555.),
+        red,
+    ));
+    world.add(Quad::new(
+        Point3::new(113., 554., 127.),
+        Vec3::new(330., 0., 0.),
+        Vec3::new(0., 0., 305.),
+        light,
+    ));
+    world.add(Quad::new(
+        Point3::new(0., 0., 0.),
+        Vec3::new(555., 0., 0.),
+        Vec3::new(0., 0., 555.),
+        white.clone(),
+    ));
+    world.add(Quad::new(
+        Point3::new(555., 555., 555.),
+        Vec3::new(-555., 0., 0.),
+        Vec3::new(0., 0., -555.),
+        white.clone(),
+    ));
+    world.add(Quad::new(
+        Point3::new(0., 0., 555.),
+        Vec3::new(555., 0., 0.),
+        Vec3::new(0., 555., 0.),
+        white.clone(),
+    ));
+
+    let box1 = make_box(
+        &Point3::new_zero(),
+        &Point3::new(165., 330., 165.),
+        &white.clone(),
+    );
+
+    let box1 = RotateY::new(box1.into(), 15.);
+    let box1 = Translate::new(box1.into(), Vec3::new(265., 0., 295.));
+
+    let box2 = make_box(
+        &Point3::new_zero(),
+        &Point3::new(165., 165., 165.),
+        &white.clone(),
+    );
+    let box2 = RotateY::new(box2.into(), -18.);
+    let box2 = Translate::new(box2.into(), Vec3::new(130., 0., 65.));
+
+    world.add(ConstantMedium::new(box1.into(), 0.01, Color::new_zero()));
+    world.add(ConstantMedium::new(box2.into(), 0.01, Color::new(1., 1., 1.)));
+
+    //let world = world.create_bvh();
+
+    let cam = Camera::new(
+        1.,
+        600,
+        200,
+        10,
+        40.,
+        Point3::new(278., 278., -800.),
+        Point3::new(278., 278., 0.),
+        Vec3::new(0., 1., 0.),
+        0.,
+        0.,
+        Color::new_zero(),
+    );
+
+    let mut pixels = init_pixels(&cam);
+    render_par(&cam, &world, &mut pixels, &vec![]);
+
+}
+
 fn main() {
-    let scene = 7;
+    let scene = 8;
     match scene {
         -1 => scene_three_spheres(),
         -2 => scene_sun_spheres(),
@@ -505,6 +594,7 @@ fn main() {
         5 => quads(),
         6 => simple_light(),
         7 => cornell_box(),
+        8 => cornell_smoke(),
         _ => (),
     }
 }
