@@ -28,11 +28,11 @@ impl ConstantMedium {
         })
     }
 
-    pub fn from_texture(boundary: Arc<Object>, density: f64, albedo: Arc<Texture>) -> Object {
+    pub fn _from_texture(boundary: Arc<Object>, density: f64, albedo: Arc<Texture>) -> Object {
         Object::Volume(ConstantMedium {
             boundary,
             neg_inv_density: -1. / density,
-            phase_function: Isotropic::from_texture(albedo),
+            phase_function: Isotropic::_from_texture(albedo),
         })
     }
 }
@@ -41,7 +41,7 @@ impl Hittable for ConstantMedium {
     fn hit(&self, r: &Ray, ray_t: &Interval) -> Option<HitRecord> {
         // Print occasional samples when debugging. To enable, set enable debug to true.
         let enable_debug = false;
-        let debugging = enable_debug && random_double() < 0.00001;
+        let _debugging = enable_debug && random_double() < 0.00001;
 
         match self.boundary.hit(r, &_UNIVERSE) {
             None => None,

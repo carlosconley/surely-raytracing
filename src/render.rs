@@ -101,7 +101,7 @@ impl Camera {
 
         let defocus_radius = focus_dist * (defocus_angle / 2.).to_radians().tan();
 
-        //let samples_per_pixel = nearest_square(samples_per_pixel);
+        let samples_per_pixel = nearest_square(samples_per_pixel);
         let sqrt_spp = (samples_per_pixel as f64).sqrt();
 
         Camera {
@@ -273,7 +273,7 @@ fn ray_color(r: &Ray, depth: i32, world: &dyn Hittable, suns: &Vec<Sun>, cam: &C
     }
 }
 
-fn draw_depth(cam: &Camera, depth_buffer: &Vec<i32>) {
+fn _draw_depth(cam: &Camera, depth_buffer: &Vec<i32>) {
     for depth in depth_buffer {
         let depth = *depth as f64 / cam.max_depth as f64;
         write_color(

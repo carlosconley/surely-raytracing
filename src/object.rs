@@ -158,8 +158,8 @@ impl Hittable for Sphere {
 // A disk light source infinitely far away
 pub struct Sun {
     pub direction: Vec3,
-    albedo: Color,
-    limit: f64,
+    _albedo: Color,
+    _limit: f64,
 }
 
 impl Sun {
@@ -168,15 +168,15 @@ impl Sun {
 
         Sun {
             direction: unit_vector(&direction),
-            albedo,
-            limit,
+            _albedo: albedo,
+            _limit: limit,
         }
     }
 
-    pub fn hit(&self, r: &Ray) -> Color {
+    pub fn _hit(&self, r: &Ray) -> Color {
         let unit_direction = unit_vector(&r.direction());
-        if dot(&unit_direction, &self.direction) > self.limit {
-            self.albedo
+        if dot(&unit_direction, &self.direction) > self._limit {
+            self._albedo
         } else {
             Color::new_zero()
         }
@@ -190,7 +190,7 @@ pub struct Plane {
     mat: Material,
 }
 impl Plane {
-    pub fn new(point: Point3, normal: Vec3, mat: Material) -> Object {
+    pub fn _new(point: Point3, normal: Vec3, mat: Material) -> Object {
         Object::_Plane(Plane {
             point,
             normal: unit_vector(&normal),

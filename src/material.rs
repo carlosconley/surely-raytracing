@@ -40,7 +40,7 @@ impl MatFn for Material {
 pub trait MatFn {
     fn scatter(&self, r_in: &Ray, rec: &HitRecord) -> Option<(Color, Ray)>;
 
-    fn emitted(&self, u: f64, v: f64, p: &Point3) -> Color {
+    fn emitted(&self, _u: f64, _v: f64, _p: &Point3) -> Color {
         Color::new_zero()
     }
 }
@@ -165,7 +165,7 @@ impl DiffuseLight {
         })
     }
 
-    pub fn from_texture(emit: Arc<Texture>) -> Material {
+    pub fn _from_texture(emit: Arc<Texture>) -> Material {
         Material::DiffuseLight(DiffuseLight { emit })
     }
 
@@ -175,7 +175,7 @@ impl DiffuseLight {
 }
 
 impl MatFn for DiffuseLight {
-    fn scatter(&self, r_in: &Ray, rec: &HitRecord) -> Option<(Color, Ray)> {
+    fn scatter(&self, _r_in: &Ray, _rec: &HitRecord) -> Option<(Color, Ray)> {
         None
     }
 }
@@ -192,7 +192,7 @@ impl Isotropic {
         })
     }
 
-    pub fn from_texture(albedo: Arc<Texture>) -> Material {
+    pub fn _from_texture(albedo: Arc<Texture>) -> Material {
         Material::Isotropic(Isotropic { albedo })
     }
 }

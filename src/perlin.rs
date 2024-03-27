@@ -1,6 +1,6 @@
 use crate::{
-    utils::{random_double, random_int},
-    vec3::{dot, random_unit_vector, random_vec3_range, unit_vector, Point3, Vec3},
+    utils::{random_int},
+    vec3::{dot, random_vec3_range, unit_vector, Point3, Vec3},
 };
 
 const POINT_COUNT: usize = 256;

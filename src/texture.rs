@@ -2,7 +2,6 @@ use std::sync::Arc;
 
 use crate::{
     color::Color,
-    interval::{self, Interval},
     perlin::Perlin,
     rt_image::RtImage,
     vec3::Point3,
@@ -35,7 +34,7 @@ impl SolidColor {
         Texture::Solid(SolidColor { color_value })
     }
 
-    pub fn from_rgb(red: f64, green: f64, blue: f64) -> Texture {
+    pub fn _from_rgb(red: f64, green: f64, blue: f64) -> Texture {
         Texture::Solid(SolidColor {
             color_value: Color::new(red, green, blue),
         })
@@ -53,7 +52,7 @@ pub struct CheckerTexture {
 }
 
 impl CheckerTexture {
-    pub fn new(scale: f64, even: Arc<Texture>, odd: Arc<Texture>) -> Texture {
+    pub fn _new(scale: f64, even: Arc<Texture>, odd: Arc<Texture>) -> Texture {
         Texture::Checker(CheckerTexture {
             inv_scale: 1. / scale,
             even,
@@ -121,7 +120,7 @@ impl NoiseTexture {
         })
     }
 
-    pub fn default() -> Texture {
+    pub fn _default() -> Texture {
         NoiseTexture::new(1.)
     }
 

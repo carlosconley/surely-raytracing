@@ -18,7 +18,7 @@ use std::sync::Arc;
 // type aliasing
 use color::Color;
 use constant_medium::ConstantMedium;
-use hittable::{BvhNode, HittableList};
+use hittable::{HittableList};
 use material::{Dielectric, DiffuseLight, Lambertian, Metal};
 use object::{make_box, Object, Quad, Sphere, Sun};
 use render::{init_pixels, render_par, Camera};
