@@ -479,7 +479,7 @@ fn cornell_box() {
     let cam = Camera::new(
         1.,
         600,
-        200,
+        64,
         50,
         40.,
         Point3::new(278., 278., -800.),
@@ -694,7 +694,7 @@ fn final_scene(image_width: i32, samples_per_pixel: i32, max_depth: i32) {
     render_par(&cam, &world, &mut pixels, &vec![]);
 }
 fn main() {
-    let scene = 9;
+    let scene = 7;
     match scene {
         -1 => scene_three_spheres(),
         -2 => scene_sun_spheres(),

@@ -27,6 +27,13 @@ pub struct Camera {
     pixel_delta_v: Vec3,
     defocus_disk_u: Vec3,
     defocus_disk_v: Vec3,
+    sqrt_spp: i32,
+    recip_sqrt_spp: f64,
+}
+
+fn nearest_square(i: i32) -> i32 {
+    let i = i as f64;
+    (i.sqrt() as i32).pow(2)
 }
 
 impl Default for Camera {
@@ -94,6 +101,9 @@ impl Camera {
 
         let defocus_radius = focus_dist * (defocus_angle / 2.).to_radians().tan();
 
+        //let samples_per_pixel = nearest_square(samples_per_pixel);
+        let sqrt_spp = (samples_per_pixel as f64).sqrt();
+
         Camera {
             aspect_ratio,
             image_width,
@@ -113,6 +123,8 @@ impl Camera {
             defocus_disk_v: v * defocus_radius,
             background,
             auto_exposure: false,
+            sqrt_spp: sqrt_spp as i32,
+            recip_sqrt_spp: 1. / sqrt_spp,
         }
     }
 }
@@ -156,10 +168,12 @@ pub fn render_par(cam: &Camera, world: &HittableList, pixels: &mut Vec<Color>, s
             let x = idx as i32 % cam.image_width;
             let y = idx / cam.image_width;
 
-            for _sample in 0..cam.samples_per_pixel {
-                let r = get_ray(cam, x, y);
-                let color = ray_color(&r, cam.max_depth, world, suns, cam);
-                row[i] = row[i] + color;
+            for s_j in 0..cam.sqrt_spp as i32 {
+                for s_i in 0..cam.sqrt_spp as i32 {
+                    let r = get_ray(cam, x, y, s_i, s_j);
+                    let color = ray_color(&r, cam.max_depth, world, suns, cam);
+                    row[i] = row[i] + color;
+                }
             }
         }
 
@@ -187,13 +201,13 @@ pub fn render_par(cam: &Camera, world: &HittableList, pixels: &mut Vec<Color>, s
     eprintln!("\rDone!                           ");
 }
 
-fn get_ray(cam: &Camera, i: i32, j: i32) -> Ray {
+fn get_ray(cam: &Camera, i: i32, j: i32, s_i: i32, s_j: i32) -> Ray {
     // Get a randomly sampled camera ray for the pixel at location i, j, originating from camera defocus disk
 
     let pixel_center =
         cam.pixel00_loc + (i as f64 * cam.pixel_delta_u) + (j as f64 * cam.pixel_delta_v);
     // you can replace sample_square with sample_disk for circular pixels
-    let pixel_sample = pixel_center + pixel_sample_square(&cam);
+    let pixel_sample = pixel_center + pixel_sample_square(cam, s_i, s_j);
 
     let ray_origin = if cam.defocus_angle <= 0. {
         cam.center
@@ -212,10 +226,11 @@ fn defocus_disk_sample(cam: &Camera) -> Point3 {
     cam.center + (p.x() * cam.defocus_disk_u) + (p.y() * cam.defocus_disk_v)
 }
 
-fn pixel_sample_square(cam: &Camera) -> Vec3 {
+fn pixel_sample_square(cam: &Camera, s_i: i32, s_j: i32) -> Vec3 {
     // Returns a random point in the square surrounding a pixel at the origin
-    let px = random_double() - 0.5;
-    let py = random_double() - 0.5;
+    // given the two subpixels
+    let px = -0.5 + cam.recip_sqrt_spp * (s_i as f64 + random_double());
+    let py = -0.5 + cam.recip_sqrt_spp * (s_j as f64 + random_double());
     px * cam.pixel_delta_u + py * cam.pixel_delta_v
 }
 
