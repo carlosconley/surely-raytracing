@@ -479,7 +479,7 @@ fn cornell_box() {
     let cam = Camera::new(
         1.,
         600,
-        64,
+        100,
         50,
         40.,
         Point3::new(278., 278., -800.),

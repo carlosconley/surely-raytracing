@@ -7,6 +7,10 @@ edition = "2021"
 name="pi"
 path="src/pi.rs"
 
+[[bin]]
+name="integrate"
+path="src/estimate_halfway.rs"
+
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
