@@ -254,7 +254,7 @@ fn ray_color(r: &Ray, depth: i32, world: &dyn Hittable, suns: &Vec<Sun>, cam: &C
             match rec.mat.scatter(r, &rec) {
                 Some((attenuation, scattered, pdf)) => {
                     let scattering_pdf = rec.mat.scattering_pdf(r, &rec, &scattered);
-                    let pdf = scattering_pdf;
+                    //let pdf = scattering_pdf;
                     let color_from_scatter = (
                         attenuation
                         * scattering_pdf
