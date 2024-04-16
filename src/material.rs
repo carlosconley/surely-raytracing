@@ -1,12 +1,15 @@
-use std::sync::Arc;
+use std::{f64::consts::PI, sync::Arc};
 
 use crate::{
     color::Color,
     hittable::HitRecord,
+    onb::Onb,
     ray::Ray,
     texture::{SolidColor, Texture},
     utils::random_double,
-    vec3::{dot, random_unit_vector, reflect, refract, unit_vector, Point3},
+    vec3::{
+        dot, random_cosine_direction, random_unit_vector, reflect, refract, unit_vector, Point3,
+    },
 };
 
 #[derive(Clone)]
@@ -19,7 +22,7 @@ pub enum Material {
 }
 
 impl MatFn for Material {
-    fn scatter(&self, r_in: &Ray, rec: &HitRecord) -> Option<(Color, Ray)> {
+    fn scatter(&self, r_in: &Ray, rec: &HitRecord) -> Option<(Color, Ray, f64)> {
         match self {
             Material::Lambertian(l) => l.scatter(r_in, rec),
             Material::Metal(m) => m.scatter(r_in, rec),
@@ -35,13 +38,25 @@ impl MatFn for Material {
             _ => Color::new_zero(),
         }
     }
+
+    fn scattering_pdf(&self, r_in: &Ray, rec: &HitRecord, scattered: &Ray) -> f64 {
+        match self {
+            Material::Lambertian(l) => l.scattering_pdf(r_in, rec, scattered),
+            Material::Isotropic(l) => l.scattering_pdf(r_in, rec, scattered),
+            _ => 0.,
+        }
+    }
 }
 
 pub trait MatFn {
-    fn scatter(&self, r_in: &Ray, rec: &HitRecord) -> Option<(Color, Ray)>;
+    fn scatter(&self, r_in: &Ray, rec: &HitRecord) -> Option<(Color, Ray, f64)>;
 
     fn emitted(&self, _u: f64, _v: f64, _p: &Point3) -> Color {
         Color::new_zero()
+    }
+
+    fn scattering_pdf(&self, r_in: &Ray, rec: &HitRecord, scattered: &Ray) -> f64 {
+        0.
     }
 }
 
@@ -63,19 +78,31 @@ impl Lambertian {
 }
 
 impl MatFn for Lambertian {
-    fn scatter(&self, r_in: &Ray, rec: &HitRecord) -> Option<(Color, Ray)> {
-        let scatter_direction = rec.normal + random_unit_vector();
-        // catch degenderate scatter direction
-        let scatter_direction = if scatter_direction.near_zero() {
-            rec.normal
-        } else {
-            scatter_direction
-        };
+    fn scatter(&self, r_in: &Ray, rec: &HitRecord) -> Option<(Color, Ray, f64)> {
+        let mut uvw = Onb::default();
+        uvw.build_from_w(&rec.normal);
+
+        let scatter_direction = uvw.local_vec(&random_cosine_direction());
+        // Normalize this
+        let scatter_direction = unit_vector(&scatter_direction);
+
+        let scattered = Ray::new_timed(rec.p, scatter_direction, r_in.time());
 
         Some((
             self.texture.value(rec.u, rec.v, &rec.p),
-            Ray::new_timed(rec.p, scatter_direction, r_in.time()),
+            scattered,
+            dot(&uvw.w(), &scatter_direction) / PI,
         ))
+    }
+
+    fn scattering_pdf(&self, r_in: &Ray, rec: &HitRecord, scattered: &Ray) -> f64 {
+        let cos_theta = dot(&rec.normal, &unit_vector(&scattered.direction()));
+
+        if cos_theta < 0. {
+            0.
+        } else {
+            cos_theta / PI
+        }
     }
 }
 
@@ -93,14 +120,18 @@ impl Metal {
 }
 
 impl MatFn for Metal {
-    fn scatter(&self, r_in: &Ray, rec: &HitRecord) -> Option<(Color, Ray)> {
+    fn scatter(&self, r_in: &Ray, rec: &HitRecord) -> Option<(Color, Ray, f64)> {
         let reflected = reflect(&unit_vector(&r_in.direction()), &rec.normal);
         let scattered = Ray::new_timed(
             rec.p,
             reflected + self.fuzz * random_unit_vector(),
             r_in.time(),
         );
-        Some((self.albedo, scattered))
+        Some((self.albedo, scattered, 1. / (4. * PI)))
+    }
+
+    fn scattering_pdf(&self, r_in: &Ray, rec: &HitRecord, scattered: &Ray) -> f64 {
+        1. / (4. * PI)
     }
 }
 
@@ -130,7 +161,7 @@ impl Dielectric {
 }
 
 impl MatFn for Dielectric {
-    fn scatter(&self, r_in: &Ray, rec: &HitRecord) -> Option<(Color, Ray)> {
+    fn scatter(&self, r_in: &Ray, rec: &HitRecord) -> Option<(Color, Ray, f64)> {
         let refraction_ratio = if rec.front_face {
             1.0 / self.ir
         } else {
@@ -149,7 +180,7 @@ impl MatFn for Dielectric {
                 refract(&unit_direction, &rec.normal, refraction_ratio)
             };
 
-        Some((self.tint, Ray::new_timed(rec.p, direction, r_in.time())))
+        Some((self.tint, Ray::new_timed(rec.p, direction, r_in.time()), 1.))
     }
 }
 
@@ -175,7 +206,7 @@ impl DiffuseLight {
 }
 
 impl MatFn for DiffuseLight {
-    fn scatter(&self, _r_in: &Ray, _rec: &HitRecord) -> Option<(Color, Ray)> {
+    fn scatter(&self, _r_in: &Ray, _rec: &HitRecord) -> Option<(Color, Ray, f64)> {
         None
     }
 }
@@ -188,7 +219,7 @@ pub struct Isotropic {
 impl Isotropic {
     pub fn new(c: Color) -> Material {
         Material::Isotropic(Isotropic {
-            albedo: Arc::new(SolidColor::new(c))
+            albedo: Arc::new(SolidColor::new(c)),
         })
     }
 
@@ -198,10 +229,11 @@ impl Isotropic {
 }
 
 impl MatFn for Isotropic {
-    fn scatter(&self, r_in: &Ray, rec: &HitRecord) -> Option<(Color, Ray)> {
+    fn scatter(&self, r_in: &Ray, rec: &HitRecord) -> Option<(Color, Ray, f64)> {
         Some((
             self.albedo.value(rec.u, rec.v, &rec.p),
-            Ray::new_timed(rec.p, random_unit_vector(), r_in.time())
+            Ray::new_timed(rec.p, random_unit_vector(), r_in.time()),
+            1.,
         ))
     }
 }

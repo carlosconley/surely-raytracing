@@ -12,6 +12,7 @@ mod texture;
 mod transform;
 mod utils;
 mod vec3;
+mod onb;
 
 use std::sync::Arc;
 

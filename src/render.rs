@@ -1,3 +1,5 @@
+use std::f64::consts::PI;
+
 use crate::color::{write_color, Color};
 use crate::hittable::{Hittable, HittableList};
 use crate::interval::Interval;
@@ -250,9 +252,14 @@ fn ray_color(r: &Ray, depth: i32, world: &dyn Hittable, suns: &Vec<Sun>, cam: &C
         Some(rec) => {
             let color_from_emission = rec.mat.emitted(rec.u, rec.v, &rec.p);
             match rec.mat.scatter(r, &rec) {
-                Some((attenuation, scattered)) => {
-                    let color_from_scatter =
-                        attenuation * ray_color(&scattered, depth - 1, world, suns, cam);
+                Some((attenuation, scattered, pdf)) => {
+                    let scattering_pdf = rec.mat.scattering_pdf(r, &rec, &scattered);
+                    let pdf = scattering_pdf;
+                    let color_from_scatter = (
+                        attenuation
+                        * scattering_pdf
+                        * ray_color(&scattered, depth - 1, world, suns, cam))
+                        / pdf;
                     color_from_emission + color_from_scatter
                 }
                 None => color_from_emission,
@@ -273,7 +280,7 @@ fn ray_color(r: &Ray, depth: i32, world: &dyn Hittable, suns: &Vec<Sun>, cam: &C
     }
 }
 
-fn _draw_depth(cam: &Camera, depth_buffer: &Vec<i32>) {
+fn draw_depth(cam: &Camera, depth_buffer: &Vec<i32>) {
     for depth in depth_buffer {
         let depth = *depth as f64 / cam.max_depth as f64;
         write_color(
