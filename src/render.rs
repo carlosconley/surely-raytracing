@@ -6,7 +6,7 @@ use crate::interval::Interval;
 use crate::material::MatFn;
 use crate::object::Sun;
 use crate::ray::Ray;
-use crate::utils::{random_double, INF};
+use crate::utils::{random_double, random_range, INF};
 use crate::vec3::{cross, dot, random_in_unit_disk, unit_vector, Point3, Vec3};
 use rayon::prelude::*;
 
@@ -250,9 +250,28 @@ fn ray_color(r: &Ray, depth: i32, world: &dyn Hittable, suns: &Vec<Sun>, cam: &C
         },
     ) {
         Some(rec) => {
-            let color_from_emission = rec.mat.emitted(rec.u, rec.v, &rec.p);
+            let color_from_emission = rec.mat.emitted(r, &rec, rec.u, rec.v, &rec.p);
             match rec.mat.scatter(r, &rec) {
                 Some((attenuation, scattered, pdf)) => {
+                    let on_light = Point3::new(random_range(213., 343.), 554., random_range(227., 332.));
+                    let to_light = on_light - rec.p;
+                    let distance_squared = to_light.length_squared();
+                    let to_light = unit_vector(&to_light);
+
+                    if dot(&to_light, &rec.normal) < 0. {
+                        return color_from_emission
+                    }
+
+                    let light_area = (343. - 213.) * (332. - 227.);
+                    let light_cosine = to_light.y().abs();
+
+                    if light_cosine < 0.000001 {
+                        return color_from_emission
+                    }
+
+                    let pdf = distance_squared / (light_cosine * light_area);
+                    let scattered = Ray::new_timed(rec.p, to_light, r.time());
+
                     let scattering_pdf = rec.mat.scattering_pdf(r, &rec, &scattered);
                     //let pdf = scattering_pdf;
                     let color_from_scatter = (

@@ -32,9 +32,9 @@ impl MatFn for Material {
         }
     }
 
-    fn emitted(&self, r_in: &Ray, rec: &HitRecord, u: f64, v: f64, p: &Point3) -> Color {
+    fn emitted(&self, r_in: &Ray, u: f64, v: f64, p: &Point3) -> Color {
         match self {
-            Material::DiffuseLight(l) => l.emitted(r_in, rec, u, v, p),
+            Material::DiffuseLight(l) => l.emitted(r_in, u, v, p),
             _ => Color::new_zero(),
         }
     }
@@ -51,7 +51,7 @@ impl MatFn for Material {
 pub trait MatFn {
     fn scatter(&self, r_in: &Ray, rec: &HitRecord) -> Option<(Color, Ray, f64)>;
 
-    fn emitted(&self, _r_in: &Ray, _rec: &HitRecord, _u: f64, _v: f64, _p: &Point3) -> Color {
+    fn emitted(&self, _r_in: &Ray, _u: f64, _v: f64, _p: &Point3) -> Color {
         Color::new_zero()
     }
 
