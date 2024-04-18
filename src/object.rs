@@ -5,10 +5,11 @@ use std::sync::Arc;
 use crate::color::Color;
 use crate::constant_medium::ConstantMedium;
 use crate::hittable::{BvhNode, HitRecord, Hittable, HittableList};
-use crate::interval::{Interval, EMPTY};
+use crate::interval::{self, Interval, EMPTY};
 use crate::material::Material;
 use crate::ray::Ray;
 use crate::transform::Transform;
+use crate::utils::{self, random_double};
 use crate::vec3::{cross, dot, unit_vector, Point3, Vec3};
 
 // Using Arc's for now, but figure out more efficient way to do it later
@@ -47,6 +48,21 @@ impl Hittable for Object {
             Object::Volume(o) => o.bounding_box(),
         }
     }
+
+    fn random(&self, origin: &Point3) -> Vec3 {
+        match self {
+            Object::Quad(o) => o.random(origin),
+            _ => Vec3::new(1., 0., 0.)
+        }
+    }
+
+    fn pdf_value(&self, origin: &Point3, direction: &Vec3) -> f64 {
+        match self {
+            Object::Quad(o) => o.pdf_value(origin, direction),
+            _ => 0.
+        }
+    }
+
 }
 
 #[derive(Clone)]
@@ -364,6 +380,7 @@ pub struct Quad {
     normal: Vec3,
     d: f64,
     w: Vec3,
+    area: f64,
 }
 
 impl Quad {
@@ -382,6 +399,7 @@ impl Quad {
             normal,
             d: dot(&normal, &q),
             w,
+            area: n.length(),
         })
     }
 }
@@ -428,6 +446,22 @@ impl Hittable for Quad {
             }
             .set_face_normal(r, &self.normal),
         )
+    }
+
+    fn pdf_value(&self, origin: &Point3, direction: &Vec3) -> f64 {
+        match self.hit(&Ray::new(*origin, *direction), &Interval { min: 0.001, max: utils::INF }) {
+            None => 0.,
+            Some(rec) => {
+                let distance_squared = rec.t * rec.t * direction.length_squared();
+                let cosine = (dot(&direction, &rec.normal) / direction.length()).abs();
+                distance_squared / (cosine * self.area)
+            }
+        }
+    }
+
+    fn random(&self, origin: &Point3) -> Vec3 {
+        let p = self.q + (random_double() * self.u) + (random_double() * self.v);
+        p - *origin
     }
 }
 

@@ -13,6 +13,7 @@ mod transform;
 mod utils;
 mod vec3;
 mod onb;
+mod pdf;
 
 use std::sync::Arc;
 
@@ -22,7 +23,7 @@ use constant_medium::ConstantMedium;
 use hittable::{HittableList};
 use material::{Dielectric, DiffuseLight, Lambertian, Metal};
 use object::{make_box, Object, Quad, Sphere, Sun};
-use render::{init_pixels, render_par, Camera};
+use render::{init_pixels, render_par, render_par_lights, Camera};
 use texture::{CheckerTexture, ImageTexture, NoiseTexture};
 use transform::{RotateY, Translate};
 use utils::{random_double, random_range};
@@ -437,7 +438,7 @@ fn cornell_box() {
         Point3::new(343., 554., 332.),
         Vec3::new(-130., 0., 0.),
         Vec3::new(0., 0., -105.),
-        light,
+        light.clone(),
     ));
     world.add(Quad::new(
         Point3::new(0., 0., 0.),
@@ -477,6 +478,15 @@ fn cornell_box() {
     let box2 = Translate::new(box2.into(), Vec3::new(130., 0., 65.));
     world.add(box2);
 
+    // lights
+    let mut lights = HittableList::new();
+    lights.add(Quad::new(
+        Point3::new(343., 554., 332.),
+        Vec3::new(-130., 0., 0.),
+        Vec3::new(0., 0., -105.),
+        light
+    ));
+
     let cam = Camera::new(
         1.,
         600,
@@ -492,7 +502,7 @@ fn cornell_box() {
     );
 
     let mut pixels = init_pixels(&cam);
-    render_par(&cam, &world, &mut pixels, &vec![]);
+    render_par_lights(&cam, &world, &mut pixels, &vec![], &lights);
 }
 
 fn cornell_smoke() {

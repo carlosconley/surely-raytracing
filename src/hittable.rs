@@ -42,6 +42,14 @@ pub trait Hittable {
 
     // consider returning &Aabb if we aren't modifying it
     fn bounding_box(&self) -> Option<&Aabb>;
+
+    fn pdf_value(&self, origin: &Point3, direction: &Vec3) -> f64 {
+        0.
+    }
+
+    fn random(&self, origin: &Point3) -> Vec3 {
+        Vec3::new(1., 0., 0.)
+    }
 }
 
 pub struct HittableList {
