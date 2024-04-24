@@ -1,11 +1,10 @@
 use std::f64::consts::PI;
 use std::sync::Arc;
 
+use rand::random;
+
 use crate::{
-    hittable::Hittable,
-    object::Object,
-    onb::Onb,
-    vec3::{dot, random_cosine_direction, random_unit_vector, unit_vector, Point3, Vec3},
+    hittable::Hittable, object::Object, onb::Onb, utils::random_double, vec3::{dot, random_cosine_direction, random_unit_vector, unit_vector, Point3, Vec3}
 };
 
 pub trait PDF {
@@ -70,4 +69,31 @@ impl PDF for HittablePDF<'_> {
         self.objects.random(&self.origin)
     }
 
+}
+
+pub struct MixturePDF<P0: PDF, P1: PDF> {
+    p0: Arc<P0>,
+    p1: Arc<P1>
+}
+
+impl<P0: PDF, P1: PDF> MixturePDF<P0, P1> {
+    pub fn new(p0: Arc<P0>, p1: Arc<P1>) -> Self {
+        MixturePDF {
+            p0, p1
+        }
+    }
+}
+
+impl <P0: PDF, P1: PDF> PDF for MixturePDF<P0, P1> {
+    fn value(&self, direction: &Vec3) -> f64 {
+        0.5 * self.p0.value(direction) + 0.5 * self.p1.value(direction)
+    }
+
+    fn generate(&self) -> Vec3 {
+        if random_double() < 0.5 {
+            self.p0.generate()
+        } else {
+            self.p1.generate()
+        }
+    }
 }

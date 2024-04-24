@@ -1,13 +1,14 @@
 use std::f64::consts::PI;
+use std::sync::Arc;
 
 use crate::color::{write_color, Color};
 use crate::hittable::{Hittable, HittableList};
 use crate::interval::Interval;
 use crate::material::MatFn;
 use crate::object::Sun;
-use crate::pdf::{CosinePDF, HittablePDF, PDF};
+use crate::pdf::{CosinePDF, HittablePDF, MixturePDF, PDF};
 use crate::ray::Ray;
-use crate::utils::{random_double, random_range, INF};
+use crate::utils::{random_double, INF};
 use crate::vec3::{cross, dot, random_in_unit_disk, unit_vector, Point3, Vec3};
 use rayon::prelude::*;
 
@@ -272,15 +273,14 @@ fn ray_color(
             let color_from_emission = rec.mat.emitted(r, &rec, rec.u, rec.v, &rec.p);
             match rec.mat.scatter(r, &rec) {
                 Some((attenuation, scattered, pdf)) => {
-                    //let surface_pdf = CosinePDF::new(&rec.normal);
-                    let light_pdf = HittablePDF::new(&lights.objects[0], rec.p);
+                    let p0 = Arc::new(HittablePDF::new(&lights.objects[0], rec.p));
+                    let p1 = Arc::new(CosinePDF::new(&rec.normal));
+                    let mixed_pdf = MixturePDF::new(p0, p1);
 
-                    let scattered = Ray::new_timed(rec.p, light_pdf.generate(), r.time());
+                    let scattered = Ray::new_timed(rec.p, mixed_pdf.generate(), r.time());
+                    let pdf = mixed_pdf.value(&scattered.direction());
 
-                    let pdf = light_pdf.value(&scattered.direction());
                     let scattering_pdf = rec.mat.scattering_pdf(r, &rec, &scattered);
-                    //let pdf = scattering_pdf;
-
                     let sample_color = ray_color(&scattered, depth - 1, world, suns, cam, lights);
                     let color_from_scatter = (attenuation * scattering_pdf * sample_color) / pdf;
 
