@@ -459,10 +459,11 @@ fn cornell_box() {
         white.clone(),
     ));
 
+    let aluminum = Metal::new(Color::new(0.8, 0.85, 0.88), 0.1);
     let box1 = make_box(
         &Point3::new_zero(),
         &Point3::new(165., 330., 165.),
-        &white.clone(),
+        &aluminum.clone(),
     );
 
     let box1 = RotateY::new(box1.into(), 15.);
@@ -479,13 +480,13 @@ fn cornell_box() {
     world.add(box2);
 
     // lights
-    let mut lights = HittableList::new();
-    lights.add(Quad::new(
+    //let mut lights = HittableList::new();
+    let lights = Quad::new(
         Point3::new(343., 554., 332.),
         Vec3::new(-130., 0., 0.),
         Vec3::new(0., 0., -105.),
         light
-    ));
+    );
 
     let cam = Camera::new(
         1.,
@@ -502,7 +503,7 @@ fn cornell_box() {
     );
 
     let mut pixels = init_pixels(&cam);
-    render_par_lights(&cam, &world, &mut pixels, &vec![], &lights);
+    render_par_lights(&cam, &world, &mut pixels, &vec![], Arc::new(lights));
 }
 
 fn cornell_smoke() {

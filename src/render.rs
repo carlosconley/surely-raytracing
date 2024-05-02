@@ -4,8 +4,8 @@ use std::sync::Arc;
 use crate::color::{write_color, Color};
 use crate::hittable::{Hittable, HittableList};
 use crate::interval::Interval;
-use crate::material::MatFn;
-use crate::object::Sun;
+use crate::material::{MatFn, SrecData};
+use crate::object::{Object, Sun};
 use crate::pdf::{CosinePDF, HittablePDF, MixturePDF, PDF};
 use crate::ray::Ray;
 use crate::utils::{random_double, INF};
@@ -138,7 +138,7 @@ pub fn init_pixels(cam: &Camera) -> Vec<Color> {
 }
 
 pub fn render_par(cam: &Camera, world: &HittableList, pixels: &mut Vec<Color>, suns: &Vec<Sun>) {
-    render_par_lights(cam, world, pixels, suns, &HittableList::new())
+    render_par_lights(cam, world, pixels, suns, Arc::new(Object::List(Arc::new(HittableList::new()))))
 }
 
 pub fn render_par_lights(
@@ -146,7 +146,7 @@ pub fn render_par_lights(
     world: &HittableList,
     pixels: &mut Vec<Color>,
     suns: &Vec<Sun>,
-    lights: &HittableList,
+    lights: Arc<Object>,
 ) {
     println!("P3\n{} {}\n255", cam.image_width, cam.image_height);
 
@@ -159,7 +159,6 @@ pub fn render_par_lights(
         }
     };
 
-    eprintln!("{}", lights.objects.len());
     match rayon::ThreadPoolBuilder::new()
         .num_threads(threads.into())
         .build_global()
@@ -186,7 +185,7 @@ pub fn render_par_lights(
             for s_j in 0..cam.sqrt_spp as i32 {
                 for s_i in 0..cam.sqrt_spp as i32 {
                     let r = get_ray(cam, x, y, s_i, s_j);
-                    let color = ray_color(&r, cam.max_depth, world, suns, cam, lights);
+                    let color = ray_color(&r, cam.max_depth, world, suns, cam, lights.clone());
                     row[i] = row[i] + color;
                 }
             }
@@ -255,7 +254,7 @@ fn ray_color(
     world: &HittableList,
     suns: &Vec<Sun>,
     cam: &Camera,
-    lights: &HittableList,
+    lights: Arc<Object>,
 ) -> Color {
     // check if we hit bounce limit
     if depth <= 0 {
@@ -272,20 +271,27 @@ fn ray_color(
         Some(rec) => {
             let color_from_emission = rec.mat.emitted(r, &rec, rec.u, rec.v, &rec.p);
             match rec.mat.scatter(r, &rec) {
-                Some((attenuation, scattered, pdf)) => {
-                    let p0 = Arc::new(HittablePDF::new(&lights.objects[0], rec.p));
-                    let p1 = Arc::new(CosinePDF::new(&rec.normal));
-                    let mixed_pdf = MixturePDF::new(p0, p1);
+                Some(srec) => match srec.data {
+                    SrecData::SkipRay(skip_ray) => 
+                        srec.attenuation
+                            * ray_color(&skip_ray, depth - 1, world, suns, cam, lights),
+                    SrecData::PdfPtr(pdf_ptr) => {
+                        let light_ptr =
+                            Arc::new(HittablePDF::new(lights.clone(), rec.p));
+                        let p = MixturePDF::new(light_ptr, pdf_ptr);
 
-                    let scattered = Ray::new_timed(rec.p, mixed_pdf.generate(), r.time());
-                    let pdf = mixed_pdf.value(&scattered.direction());
+                        let scattered = Ray::new_timed(rec.p, p.generate(), r.time());
 
-                    let scattering_pdf = rec.mat.scattering_pdf(r, &rec, &scattered);
-                    let sample_color = ray_color(&scattered, depth - 1, world, suns, cam, lights);
-                    let color_from_scatter = (attenuation * scattering_pdf * sample_color) / pdf;
+                        let pdf_val = p.value(&scattered.direction());
+                        let scattering_pdf = rec.mat.scattering_pdf(r, &rec, &scattered);
+                        let sample_color =
+                            ray_color(&scattered, depth - 1, world, suns, cam, lights);
+                        let color_from_scatter =
+                            (srec.attenuation * scattering_pdf * sample_color) / pdf_val;
 
-                    color_from_emission + color_from_scatter
-                }
+                        color_from_emission + color_from_scatter
+                    }
+                },
                 None => color_from_emission,
             }
         }
@@ -302,8 +308,8 @@ fn ray_color(
             cam.background //+ sun_light
         }
     }
-}
 
+}
 fn draw_depth(cam: &Camera, depth_buffer: &Vec<i32>) {
     for depth in depth_buffer {
         let depth = *depth as f64 / cam.max_depth as f64;

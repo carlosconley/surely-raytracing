@@ -1,11 +1,39 @@
 use std::f64::consts::PI;
 use std::sync::Arc;
 
-use rand::random;
-
 use crate::{
     hittable::Hittable, object::Object, onb::Onb, utils::random_double, vec3::{dot, random_cosine_direction, random_unit_vector, unit_vector, Point3, Vec3}
 };
+
+pub enum AnyPDF {
+    Sphere(SpherePDF),
+    Cosine(CosinePDF),
+    Mixed(MixturePDF),
+    Hittable(HittablePDF),
+}
+
+impl PDF for AnyPDF {
+
+    fn value(&self, direction: &Vec3) -> f64 {
+        match self {
+            AnyPDF::Sphere(p) => p.value(direction),
+            AnyPDF::Cosine(p) => p.value(direction),
+            AnyPDF::Mixed(p) => p.value(direction),
+            AnyPDF::Hittable(p) => p.value(direction),
+
+        }
+    }
+
+    fn generate(&self) -> Vec3 {
+        match self {
+            AnyPDF::Sphere(p) => p.generate(),
+            AnyPDF::Cosine(p) => p.generate(),
+            AnyPDF::Mixed(p) => p.generate(),
+            AnyPDF::Hittable(p) => p.generate(),
+        }
+
+    }
+}
 
 pub trait PDF {
     fn value(&self, direction: &Vec3) -> f64;
@@ -30,10 +58,10 @@ pub struct CosinePDF {
 }
 
 impl CosinePDF {
-    pub fn new(w: &Vec3) -> CosinePDF {
+    pub fn new(w: &Vec3) -> AnyPDF {
         let mut uvw = Onb::default();
         uvw.build_from_w(w);
-        CosinePDF { uvw }
+        AnyPDF::Cosine(CosinePDF { uvw })
     }
 }
 
@@ -49,18 +77,18 @@ impl PDF for CosinePDF {
     }
 }
 
-pub struct HittablePDF<'obj> {
-    objects: &'obj Object,
+pub struct HittablePDF {
+    objects: Arc<Object>,
     origin: Point3,
 }
 
-impl HittablePDF<'_> {
-    pub fn new(objects: &Object, origin: Point3) -> HittablePDF {
-        HittablePDF { objects, origin }
+impl HittablePDF {
+    pub fn new(objects: Arc<Object>, origin: Point3) -> AnyPDF {
+        AnyPDF::Hittable(HittablePDF { objects, origin })
     }
 }
 
-impl PDF for HittablePDF<'_> {
+impl PDF for HittablePDF {
     fn value(&self, direction: &Vec3) -> f64 {
         self.objects.pdf_value(&self.origin, direction)
     }
@@ -71,20 +99,20 @@ impl PDF for HittablePDF<'_> {
 
 }
 
-pub struct MixturePDF<P0: PDF, P1: PDF> {
-    p0: Arc<P0>,
-    p1: Arc<P1>
+pub struct MixturePDF {
+    p0: Arc<AnyPDF>,
+    p1: Arc<AnyPDF>
 }
 
-impl<P0: PDF, P1: PDF> MixturePDF<P0, P1> {
-    pub fn new(p0: Arc<P0>, p1: Arc<P1>) -> Self {
+impl MixturePDF {
+    pub fn new(p0: Arc<AnyPDF>, p1: Arc<AnyPDF>) -> Self {
         MixturePDF {
             p0, p1
         }
     }
 }
 
-impl <P0: PDF, P1: PDF> PDF for MixturePDF<P0, P1> {
+impl PDF for MixturePDF {
     fn value(&self, direction: &Vec3) -> f64 {
         0.5 * self.p0.value(direction) + 0.5 * self.p1.value(direction)
     }

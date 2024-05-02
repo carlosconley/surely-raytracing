@@ -3,14 +3,24 @@ use std::{f64::consts::PI, sync::Arc};
 use crate::{
     color::Color,
     hittable::HitRecord,
-    onb::Onb,
+    pdf::{AnyPDF, CosinePDF, SpherePDF},
     ray::Ray,
     texture::{SolidColor, Texture},
     utils::random_double,
     vec3::{
-        dot, random_cosine_direction, random_unit_vector, reflect, refract, unit_vector, Point3,
+        dot, random_unit_vector, reflect, refract, unit_vector, Point3,
     },
 };
+
+
+pub enum SrecData {
+    PdfPtr(Arc<AnyPDF>),
+    SkipRay(Ray)
+}
+pub struct ScatterRecord {
+    pub attenuation: Color,
+    pub data: SrecData,
+}
 
 #[derive(Clone)]
 pub enum Material {
@@ -22,7 +32,7 @@ pub enum Material {
 }
 
 impl MatFn for Material {
-    fn scatter(&self, r_in: &Ray, rec: &HitRecord) -> Option<(Color, Ray, f64)> {
+    fn scatter(&self, r_in: &Ray, rec: &HitRecord) -> Option<ScatterRecord> {
         match self {
             Material::Lambertian(l) => l.scatter(r_in, rec),
             Material::Metal(m) => m.scatter(r_in, rec),
@@ -49,7 +59,9 @@ impl MatFn for Material {
 }
 
 pub trait MatFn {
-    fn scatter(&self, r_in: &Ray, rec: &HitRecord) -> Option<(Color, Ray, f64)>;
+    fn scatter(&self, r_in: &Ray, rec: &HitRecord) -> Option<ScatterRecord> {
+        None
+    }
 
     fn emitted(&self, _r_in: &Ray, _rec: &HitRecord, _u: f64, _v: f64, _p: &Point3) -> Color {
         Color::new_zero()
@@ -78,21 +90,11 @@ impl Lambertian {
 }
 
 impl MatFn for Lambertian {
-    fn scatter(&self, r_in: &Ray, rec: &HitRecord) -> Option<(Color, Ray, f64)> {
-        let mut uvw = Onb::default();
-        uvw.build_from_w(&rec.normal);
-
-        let scatter_direction = uvw.local_vec(&random_cosine_direction());
-        // Normalize this
-        let scatter_direction = unit_vector(&scatter_direction);
-
-        let scattered = Ray::new_timed(rec.p, scatter_direction, r_in.time());
-
-        Some((
-            self.texture.value(rec.u, rec.v, &rec.p),
-            scattered,
-            dot(&uvw.w(), &scatter_direction) / PI,
-        ))
+    fn scatter(&self, r_in: &Ray, rec: &HitRecord) -> Option<ScatterRecord> {
+        Some(ScatterRecord {
+            attenuation: self.texture.value(rec.u, rec.v, &rec.p),
+            data: SrecData::PdfPtr(Arc::new(CosinePDF::new(&rec.normal))),
+        })
     }
 
     fn scattering_pdf(&self, r_in: &Ray, rec: &HitRecord, scattered: &Ray) -> f64 {
@@ -120,14 +122,15 @@ impl Metal {
 }
 
 impl MatFn for Metal {
-    fn scatter(&self, r_in: &Ray, rec: &HitRecord) -> Option<(Color, Ray, f64)> {
+    fn scatter(&self, r_in: &Ray, rec: &HitRecord) -> Option<ScatterRecord> {
         let reflected = reflect(&unit_vector(&r_in.direction()), &rec.normal);
-        let scattered = Ray::new_timed(
-            rec.p,
-            reflected + self.fuzz * random_unit_vector(),
-            r_in.time(),
-        );
-        Some((self.albedo, scattered, 1. / (4. * PI)))
+        let reflected = unit_vector(&reflected) + (self.fuzz * random_unit_vector());
+
+        Some(ScatterRecord {
+            attenuation: self.albedo,
+            data: SrecData::SkipRay(Ray::new_timed(rec.p, reflected, r_in.time())),
+        })
+
     }
 
     fn scattering_pdf(&self, r_in: &Ray, rec: &HitRecord, scattered: &Ray) -> f64 {
@@ -161,7 +164,7 @@ impl Dielectric {
 }
 
 impl MatFn for Dielectric {
-    fn scatter(&self, r_in: &Ray, rec: &HitRecord) -> Option<(Color, Ray, f64)> {
+    fn scatter(&self, r_in: &Ray, rec: &HitRecord) -> Option<ScatterRecord> {
         let refraction_ratio = if rec.front_face {
             1.0 / self.ir
         } else {
@@ -180,7 +183,11 @@ impl MatFn for Dielectric {
                 refract(&unit_direction, &rec.normal, refraction_ratio)
             };
 
-        Some((self.tint, Ray::new_timed(rec.p, direction, r_in.time()), 1.))
+        Some(ScatterRecord {
+            attenuation: self.tint,
+            data: SrecData::SkipRay(Ray::new_timed(rec.p, direction, r_in.time())),
+        })
+
     }
 }
 
@@ -209,7 +216,7 @@ impl DiffuseLight {
 }
 
 impl MatFn for DiffuseLight {
-    fn scatter(&self, _r_in: &Ray, _rec: &HitRecord) -> Option<(Color, Ray, f64)> {
+    fn scatter(&self, _r_in: &Ray, _rec: &HitRecord) -> Option<ScatterRecord> {
         None
     }
 }
@@ -232,11 +239,10 @@ impl Isotropic {
 }
 
 impl MatFn for Isotropic {
-    fn scatter(&self, r_in: &Ray, rec: &HitRecord) -> Option<(Color, Ray, f64)> {
-        Some((
-            self.albedo.value(rec.u, rec.v, &rec.p),
-            Ray::new_timed(rec.p, random_unit_vector(), r_in.time()),
-            1.,
-        ))
+    fn scatter(&self, r_in: &Ray, rec: &HitRecord) -> Option<ScatterRecord> {
+        Some(ScatterRecord {
+            attenuation: self.albedo.value(rec.u, rec.v, &rec.p),
+            data: SrecData::PdfPtr(Arc::new(AnyPDF::Sphere(SpherePDF))),
+        })
     }
 }
