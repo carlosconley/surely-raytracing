@@ -7,9 +7,10 @@ use crate::constant_medium::ConstantMedium;
 use crate::hittable::{BvhNode, HitRecord, Hittable, HittableList};
 use crate::interval::{self, Interval, EMPTY};
 use crate::material::Material;
+use crate::onb::Onb;
 use crate::ray::Ray;
 use crate::transform::Transform;
-use crate::utils::{self, random_double};
+use crate::utils::{self, random_double, INF};
 use crate::vec3::{cross, dot, unit_vector, Point3, Vec3};
 
 // Using Arc's for now, but figure out more efficient way to do it later
@@ -52,6 +53,8 @@ impl Hittable for Object {
     fn random(&self, origin: &Point3) -> Vec3 {
         match self {
             Object::Quad(o) => o.random(origin),
+            Object::Sphere(o) => o.random(origin),
+            Object::List(o) => o.random(origin),
             _ => Vec3::new(1., 0., 0.)
         }
     }
@@ -59,6 +62,8 @@ impl Hittable for Object {
     fn pdf_value(&self, origin: &Point3, direction: &Vec3) -> f64 {
         match self {
             Object::Quad(o) => o.pdf_value(origin, direction),
+            Object::Sphere(o) => o.pdf_value(origin, direction),
+            Object::List(o) => o.pdf_value(origin, direction),
             _ => 0.
         }
     }
@@ -112,6 +117,18 @@ impl Sphere {
 
         let inv_pi = 1.0 / PI;
         (phi * inv_pi * 0.5, theta * inv_pi)
+    }
+
+    fn random_to_sphere(radius: f64, distance_squared: f64) -> Vec3 {
+        let r1 = random_double();
+        let r2 = random_double();
+        let z = 1. + r2 * ((1. - radius * radius / distance_squared).sqrt() - 1.);
+
+        let phi = 2. * PI * r1;
+        let x = phi.cos() * (1. - z * z).sqrt();
+        let y = phi.sin() * (1. - z * z).sqrt();
+
+        Vec3::new(x, y , z)
     }
 
     pub fn _test_uvs() {
@@ -168,6 +185,30 @@ impl Hittable for Sphere {
 
     fn bounding_box(&self) -> Option<&Aabb> {
         Some(&self.bbox)
+    }
+
+    fn pdf_value(&self, origin: &Point3, direction: &Vec3) -> f64 {
+        // This method only works for stationary spheres
+        
+        match self.hit(&Ray::new(*origin, *direction), &Interval { min: 0.001, max: INF }) {
+            None => 0.,
+            Some(_) => {
+                let cos_theta_max = (1. - self.radius*self.radius / (self.center - *origin).length_squared()).sqrt();
+                let solid_angle = 2. * PI * (1. - cos_theta_max);
+
+                1. / solid_angle
+            }
+        }
+    }
+
+    fn random(&self, origin: &Point3) -> Vec3 {
+        let direction = self.center - *origin;
+        let distance_squared = direction.length_squared();
+        let mut uvw = Onb::default();
+        uvw.build_from_w(&direction);
+
+        uvw.local_vec(&Self::random_to_sphere(self.radius, distance_squared))
+
     }
 }
 

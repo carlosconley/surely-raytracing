@@ -14,7 +14,7 @@ use crate::{
 
 
 pub enum SrecData {
-    PdfPtr(Arc<AnyPDF>),
+    PdfPtr(Box<AnyPDF>),
     SkipRay(Ray)
 }
 pub struct ScatterRecord {
@@ -93,7 +93,7 @@ impl MatFn for Lambertian {
     fn scatter(&self, r_in: &Ray, rec: &HitRecord) -> Option<ScatterRecord> {
         Some(ScatterRecord {
             attenuation: self.texture.value(rec.u, rec.v, &rec.p),
-            data: SrecData::PdfPtr(Arc::new(CosinePDF::new(&rec.normal))),
+            data: SrecData::PdfPtr(Box::new(CosinePDF::new(&rec.normal))),
         })
     }
 
@@ -242,7 +242,7 @@ impl MatFn for Isotropic {
     fn scatter(&self, r_in: &Ray, rec: &HitRecord) -> Option<ScatterRecord> {
         Some(ScatterRecord {
             attenuation: self.albedo.value(rec.u, rec.v, &rec.p),
-            data: SrecData::PdfPtr(Arc::new(AnyPDF::Sphere(SpherePDF))),
+            data: SrecData::PdfPtr(Box::new(AnyPDF::Sphere(SpherePDF))),
         })
     }
 }

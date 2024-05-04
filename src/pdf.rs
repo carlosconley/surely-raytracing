@@ -8,7 +8,7 @@ use crate::{
 pub enum AnyPDF {
     Sphere(SpherePDF),
     Cosine(CosinePDF),
-    Mixed(MixturePDF),
+    _Mixed(MixturePDF),
     Hittable(HittablePDF),
 }
 
@@ -18,7 +18,7 @@ impl PDF for AnyPDF {
         match self {
             AnyPDF::Sphere(p) => p.value(direction),
             AnyPDF::Cosine(p) => p.value(direction),
-            AnyPDF::Mixed(p) => p.value(direction),
+            AnyPDF::_Mixed(p) => p.value(direction),
             AnyPDF::Hittable(p) => p.value(direction),
 
         }
@@ -28,7 +28,7 @@ impl PDF for AnyPDF {
         match self {
             AnyPDF::Sphere(p) => p.generate(),
             AnyPDF::Cosine(p) => p.generate(),
-            AnyPDF::Mixed(p) => p.generate(),
+            AnyPDF::_Mixed(p) => p.generate(),
             AnyPDF::Hittable(p) => p.generate(),
         }
 
@@ -100,12 +100,12 @@ impl PDF for HittablePDF {
 }
 
 pub struct MixturePDF {
-    p0: Arc<AnyPDF>,
-    p1: Arc<AnyPDF>
+    p0: Box<AnyPDF>,
+    p1: Box<AnyPDF>
 }
 
 impl MixturePDF {
-    pub fn new(p0: Arc<AnyPDF>, p1: Arc<AnyPDF>) -> Self {
+    pub fn new(p0: Box<AnyPDF>, p1: Box<AnyPDF>) -> Self {
         MixturePDF {
             p0, p1
         }

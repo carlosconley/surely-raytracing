@@ -111,6 +111,22 @@ impl Hittable for HittableList {
     fn bounding_box(&self) -> Option<&Aabb> {
         Some(&self.bbox)
     }
+
+    fn pdf_value(&self, origin: &Point3, direction: &Vec3) -> f64 {
+        let weight = 1. / self.objects.len() as f64;
+
+        self.objects
+            .iter()
+            .map(|obj| obj.pdf_value(origin, direction) )
+            .reduce(|x, y| x + y).expect("Could not sum pdf values of list")
+            * weight
+
+    }
+
+    fn random(&self, origin: &Point3) -> Vec3 {
+        let int_size = self.objects.len() as i64;
+        self.objects[random_int(0, int_size - 1) as usize].random(origin)
+    }
 }
 
 // In the book left and right are shared pointers,

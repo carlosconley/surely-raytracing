@@ -277,7 +277,7 @@ fn ray_color(
                             * ray_color(&skip_ray, depth - 1, world, suns, cam, lights),
                     SrecData::PdfPtr(pdf_ptr) => {
                         let light_ptr =
-                            Arc::new(HittablePDF::new(lights.clone(), rec.p));
+                            Box::new(HittablePDF::new(lights.clone(), rec.p));
                         let p = MixturePDF::new(light_ptr, pdf_ptr);
 
                         let scattered = Ray::new_timed(rec.p, p.generate(), r.time());

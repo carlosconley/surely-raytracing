@@ -463,7 +463,7 @@ fn cornell_box() {
     let box1 = make_box(
         &Point3::new_zero(),
         &Point3::new(165., 330., 165.),
-        &aluminum.clone(),
+        &white.clone(),
     );
 
     let box1 = RotateY::new(box1.into(), 15.);
@@ -477,21 +477,26 @@ fn cornell_box() {
     );
     let box2 = RotateY::new(box2.into(), -18.);
     let box2 = Translate::new(box2.into(), Vec3::new(130., 0., 65.));
-    world.add(box2);
+    //world.add(box2);
+    let glass = Dielectric::new_clear(1.5);
+    world.add(Sphere::new(Point3::new(190., 90., 190.), 90., glass.clone()));
 
     // lights
-    //let mut lights = HittableList::new();
-    let lights = Quad::new(
+    let mut lights = HittableList::new();
+    lights.add(Quad::new(
         Point3::new(343., 554., 332.),
         Vec3::new(-130., 0., 0.),
         Vec3::new(0., 0., -105.),
-        light
-    );
+        light.clone()
+    ));
+
+    lights.add(Sphere::new(Point3::new(190., 90., 190.), 90., light.clone()));
+    let lights = Object::List(Arc::new(lights));
 
     let cam = Camera::new(
         1.,
         600,
-        100,
+        1000,
         50,
         40.,
         Point3::new(278., 278., -800.),
@@ -580,7 +585,7 @@ fn cornell_smoke() {
     let cam = Camera::new(
         1.,
         600,
-        200,
+        100,
         10,
         40.,
         Point3::new(278., 278., -800.),
